@@ -6,6 +6,13 @@
   "observability": {
     "enabled": true
   },
+  "kv_namespaces": [
+    {
+      "binding": "CF_USAGE_KV",
+      "id": "CF_USAGE_KV_ID_PLACEHOLDER",
+      "preview_id": "CF_USAGE_KV_PREVIEW_ID_PLACEHOLDER"
+    }
+  ],
   "vars": {
     "CF_ACCOUNT_ID_1": "bc5e10cea180fa824cae66f8c71be7a0",
     "CF_ACCOUNT_NAME_1": "main",
