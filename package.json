@@ -1,0 +1,14 @@
+{
+  "name": "cf-usage",
+  "version": "1.0.0",
+  "description": "Cloudflare Workers Usage Dashboard running on Cloudflare Workers",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^3.107.3"
+  }
+}
