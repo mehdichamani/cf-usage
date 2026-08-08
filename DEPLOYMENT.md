@@ -63,22 +63,47 @@ Open `wrangler.json` and update the `kv_namespaces` binding array with your new 
 
 ---
 
-## 3. Deploy to Cloudflare Workers (Recommended)
+## 3. Deploy to Cloudflare Workers
 
-### Step 1: Login to Cloudflare CLI
-Run the following command once to link Wrangler with your Cloudflare account:
+Choose one of the following deployment options:
 
-```bash
-npx wrangler login
-```
-*(This opens a browser window asking to authorize Wrangler with your Cloudflare account)*
+### Option A: Manual CLI Deployment (Wrangler)
 
-### Step 2: Deploy the Worker
-Deploy the worker with a single command:
+1. **Login to Cloudflare CLI**:
+   ```bash
+   npx wrangler login
+   ```
+   *(This opens a browser window asking to authorize Wrangler with your Cloudflare account)*
 
-```bash
-npm run deploy
-```
+2. **Deploy the Worker**:
+   ```bash
+   npm run deploy
+   ```
+
+---
+
+### Option B: Automated GitHub Actions Deployment (CI/CD)
+
+The repository includes a GitHub Actions workflow located at [`.github/workflows/deploy.yml`](file:///.github/workflows/deploy.yml) that uses `cloudflare/wrangler-action` to automatically deploy changes whenever you push to the `main` branch.
+
+1. **Set up GitHub Secrets**:
+   Go to your GitHub Repository $\rightarrow$ **Settings** $\rightarrow$ **Secrets and variables** $\rightarrow$ **Actions** $\rightarrow$ **New repository secret**:
+   - `CLOUDFLARE_API_TOKEN`: Your Cloudflare API Token (Create under **Cloudflare Dashboard** $\rightarrow$ **My Profile** $\rightarrow$ **API Tokens** using the **Edit Cloudflare Workers** template).
+   - `CLOUDFLARE_ACCOUNT_ID`: Your Cloudflare Account ID (Found on the Cloudflare Dashboard overview page or URL).
+
+2. **Deploy via Git Push**:
+   Push your code to the `main` branch. The action will automatically run and deploy your worker.
+
+---
+
+### Option C: Cloudflare Dashboard Git Repository Integration
+
+1. Go to **Cloudflare Dashboard** $\rightarrow$ **Workers & Pages**.
+2. Click **Create Application** $\rightarrow$ **Workers**.
+3. Under deployment options, select **Connect Git Repository** (or setup GitHub Actions deployment via `.github/workflows/deploy.yml` using `cloudflare/wrangler-action`).
+4. Select your GitHub repository and target branch (`main`).
+5. Configure build settings (Build command: `npm run deploy` or leave standard, Root directory: `/`).
+6. Click **Save and Deploy**.
 
 ---
 
