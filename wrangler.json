@@ -1,28 +1,17 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "cf-usage",
-  "main": "src/index.js",
-  "compatibility_date": "2025-02-04",
-  "observability": {
-    "enabled": true
-  },
-  "kv_namespaces": [
-    {
-      "binding": "CF_USAGE_KV",
-      "id": "CF_USAGE_KV_ID_PLACEHOLDER",
-      "preview_id": "CF_USAGE_KV_PREVIEW_ID_PLACEHOLDER"
-    }
-  ],
-  "vars": {
-    "CF_ACCOUNT_ID_1": "bc5e10cea180fa824cae66f8c71be7a0",
-    "CF_ACCOUNT_NAME_1": "main",
-    "CF_ACCOUNT_ID_2": "a9646507d59147402cf414fae9bf9cf8",
-    "CF_ACCOUNT_NAME_2": "625",
-    "CF_ACCOUNT_ID_3": "4568e85b78a47ff9221cf3ba29642316",
-    "CF_ACCOUNT_NAME_3": "626",
-    "CF_ACCOUNT_ID_4": "43f397e2f081394065e417995ccae094",
-    "CF_ACCOUNT_NAME_4": "627",
-    "CF_ACCOUNT_ID_5": "3217c17c3c2f93221c6261ae61246c19",
-    "CF_ACCOUNT_NAME_5": "628"
-  }
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "cf-usage",
+	"main": "src/index.js",
+	"compatibility_date": "2025-02-04",
+	"observability": {
+		"enabled": true
+	},
+	"kv_namespaces": [
+		{
+			"binding": "CF_USAGE_KV",
+			"id": "bc997200b6854526869d8fcdb963c523",
+			"preview_id": "CF_USAGE_KV_PREVIEW_ID_PLACEHOLDER",
+			"remote": true
+		}
+	]
 }

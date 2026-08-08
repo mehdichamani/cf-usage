@@ -1391,7 +1391,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 <span>Developed with</span>
                 <span class="heart">❤️</span>
                 <span>by</span>
-                <a href="#" class="dev-link" target="_blank" rel="noopener">[Developer Name / Portfolio]</a>
+                <a href="htttps://ajbv.ir" class="dev-link" target="_blank" rel="noopener">Mehdi Chamani</a>
             </div>
             <div class="footer-badge">
                 Powered by Cloudflare Workers & Cloudflare KV
@@ -1565,11 +1565,40 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 }
             } catch (e) {
                 alert("Failed to save note due to connection issue.");
-                location.reload();
             }
         }
 
-        // Links Management
+        // Links Management & Dynamic Rendering
+        function renderAccountLinks(accountId) {
+            const cardEl = document.querySelector('.card[data-account-id="' + accountId + '"]');
+            if (!cardEl) return;
+            const linksRow = cardEl.querySelector('.links-row');
+            if (!linksRow) return;
+
+            let meta = fullMetaMap.get(accountId) || { note: "", links: [] };
+            let linksHtml = "";
+            (meta.links || []).forEach(function(link, idx) {
+                linksHtml += '<div class="link-slot" data-index="' + idx + '">' +
+                    '<a href="' + link.url + '" target="_blank" rel="noopener" class="link-anchor">' +
+                    '<i class="ti ti-' + (link.icon || 'link') + '"></i>' +
+                    '<span>' + link.title + '</span>' +
+                    '</a>' +
+                    '<button class="delete-link-btn" onclick="deleteLink(\'' + accountId + '\', ' + idx + ')" title="Delete Link">' +
+                    '<i class="ti ti-x"></i>' +
+                    '</button>' +
+                    '</div>';
+            });
+
+            if ((meta.links || []).length < 5) {
+                linksHtml += '<button class="add-link-btn" onclick="openAddLinkModal(\'' + accountId + '\')" title="Add Link Slot">' +
+                    '<i class="ti ti-plus"></i>' +
+                    '<span>Add Link</span>' +
+                    '</button>';
+            }
+
+            linksRow.innerHTML = linksHtml;
+        }
+
         function openAddLinkModal(accountId) {
             if (!requireUnlock()) return;
             document.getElementById('add-link-account-id').value = accountId;
@@ -1599,7 +1628,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
 
             meta.links.push({ title, url, icon });
             fullMetaMap.set(accountId, meta);
-
+            renderAccountLinks(accountId);
             closeModal('add-link-modal');
 
             try {
@@ -1612,16 +1641,13 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                         links: meta.links
                     })
                 });
-                if (res.ok) {
-                    location.reload();
-                } else {
+                if (!res.ok) {
                     const err = await res.text();
                     alert("Failed to save link: " + err);
                     location.reload();
                 }
             } catch (e) {
                 alert("Connection error.");
-                location.reload();
             }
         }
 
@@ -1634,6 +1660,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
 
             meta.links.splice(index, 1);
             fullMetaMap.set(accountId, meta);
+            renderAccountLinks(accountId);
 
             try {
                 const res = await fetch('/api/account-meta', {
@@ -1645,16 +1672,13 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                         links: meta.links
                     })
                 });
-                if (res.ok) {
-                    location.reload();
-                } else {
+                if (!res.ok) {
                     const err = await res.text();
                     alert("Failed to delete link: " + err);
                     location.reload();
                 }
             } catch (e) {
                 alert("Connection error.");
-                location.reload();
             }
         }
 
@@ -1797,6 +1821,20 @@ function renderDashboard(results, env, hasPasswordConfigured) {
 </html>`;
 }
 
+async function purgeEdgeCache(request) {
+  try {
+    const cache = typeof caches !== "undefined" ? caches.default : null;
+    if (cache) {
+      const cacheUrl = new URL(request.url);
+      cacheUrl.pathname = "/__cached_dashboard";
+      const cacheKey = new Request(cacheUrl.toString(), { method: "GET" });
+      await cache.delete(cacheKey);
+    }
+  } catch (e) {
+    console.error("Error purging edge cache:", e);
+  }
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -1875,6 +1913,7 @@ export default {
 
         // Clear caches
         MEMORY_CACHE.clear();
+        await purgeEdgeCache(request);
 
         return new Response(JSON.stringify({ success: true }), {
           headers: { "Content-Type": "application/json" }
@@ -1911,11 +1950,12 @@ export default {
           links: trimmedLinks
         }));
 
-        // Clear cache for this specific account
+        // Clear cache for this specific account and purge Edge Cache
         const cached = MEMORY_CACHE.get(account_id);
         if (cached) {
           MEMORY_CACHE.delete(account_id);
         }
+        await purgeEdgeCache(request);
 
         return new Response(JSON.stringify({ success: true }), {
           headers: { "Content-Type": "application/json" }
@@ -2021,7 +2061,7 @@ export default {
     if (request.headers.get("Authorization")) {
       responseHeaders["Cache-Control"] = "no-cache, no-store, must-revalidate";
     } else {
-      responseHeaders["Cache-Control"] = `public, max-age=${CACHE_TTL_SECONDS}, s-maxage=${CACHE_TTL_SECONDS}`;
+      responseHeaders["Cache-Control"] = `public, max-age=0, s-maxage=${CACHE_TTL_SECONDS}, must-revalidate`;
     }
 
     const response = new Response(html, {
