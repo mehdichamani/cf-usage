@@ -1,6 +1,6 @@
 import os
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 import httpx
@@ -10,19 +10,27 @@ load_dotenv()
 
 app = FastAPI()
 
-# Configuration: Parse from environment variables or fallback
-ACCOUNTS = [
-    {
-        "name": os.getenv("CF_ACCOUNT_1_NAME", "Account 1"),
-        "account_id": os.getenv("CF_ACCOUNT_ID_1", ""),
-        "api_token": os.getenv("CF_API_TOKEN_1", ""),
-    },
-    {
-        "name": os.getenv("CF_ACCOUNT_2_NAME", "Account 2"),
-        "account_id": os.getenv("CF_ACCOUNT_ID_2", ""),
-        "api_token": os.getenv("CF_API_TOKEN_2", ""),
-    },
-]
+# Parse up to 10 Cloudflare accounts from environment variables dynamically
+ACCOUNTS = []
+for i in range(1, 11):
+    account_id = os.getenv(f"CF_ACCOUNT_ID_{i}") or os.getenv(f"CF_ACCOUNT_{i}_ID") or ""
+    api_token = os.getenv(f"CF_API_TOKEN_{i}") or ""
+
+    # Fallback to general environment variables for index 1 if not set
+    if i == 1:
+        if not account_id:
+            account_id = os.getenv("CF_ACCOUNT_ID") or ""
+        if not api_token:
+            api_token = os.getenv("CF_API_TOKEN") or ""
+
+    if account_id:
+        name = os.getenv(f"CF_ACCOUNT_{i}_NAME") or f"Account {i}"
+        ACCOUNTS.append({
+            "name": name,
+            "account_id": account_id,
+            "api_token": api_token,
+            "index": i,
+        })
 
 WORKERS_LIMIT = 100_000
 
@@ -41,16 +49,52 @@ query GetWorkersUsage($accountTag: String, $date: String) {
 }
 """
 
-async def fetch_account_usage(client: httpx.AsyncClient, account: dict) -> dict:
-    if not account["account_id"] or not account["api_token"]:
-        return {
-            "name": account["name"],
-            "requests": 0,
-            "limit": WORKERS_LIMIT,
-            "pct": 0,
-            "error": "Missing Environment Variables (ID or Token)"
-        }
+# In-memory Cache Configuration
+CACHE = {}
+CACHE_TTL = timedelta(minutes=15)
+CACHE_LOCK = asyncio.Lock()
 
+async def fetch_account_info(client: httpx.AsyncClient, account_id: str, api_token: str) -> dict:
+    """
+    Fetches user email and account details from Cloudflare API.
+    Returns a dict with 'email' (str or None) and 'cf_account_name' (str or None).
+    """
+    headers = {
+        "Authorization": f"Bearer {api_token}",
+        "Content-Type": "application/json",
+    }
+    email = None
+    cf_account_name = None
+
+    # Try fetching user details first
+    try:
+        user_res = await client.get("https://api.cloudflare.com/client/v4/user", headers=headers, timeout=5.0)
+        if user_res.status_code == 200:
+            user_data = user_res.json()
+            if user_data.get("success"):
+                email = user_data.get("result", {}).get("email")
+    except Exception:
+        pass
+
+    # Try fetching account details next
+    try:
+        acc_res = await client.get(f"https://api.cloudflare.com/client/v4/accounts/{account_id}", headers=headers, timeout=5.0)
+        if acc_res.status_code == 200:
+            acc_data = acc_res.json()
+            if acc_data.get("success"):
+                cf_account_name = acc_data.get("result", {}).get("name")
+    except Exception:
+        pass
+
+    return {
+        "email": email,
+        "cf_account_name": cf_account_name
+    }
+
+async def fetch_account_usage(client: httpx.AsyncClient, account: dict) -> dict:
+    """
+    Queries Cloudflare GraphQL API for today's workers usage.
+    """
     today_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     headers = {
         "Authorization": f"Bearer {account['api_token']}",
@@ -71,11 +115,11 @@ async def fetch_account_usage(client: httpx.AsyncClient, account: dict) -> dict:
         # Catch Cloudflare API GraphQL errors directly
         if "errors" in data and data["errors"]:
             err_msg = data["errors"][0].get("message", "GraphQL Error")
-            return {"name": account["name"], "requests": 0, "limit": WORKERS_LIMIT, "pct": 0, "error": f"API Error: {err_msg}"}
+            return {"requests": 0, "limit": WORKERS_LIMIT, "pct": 0, "error": f"API Error: {err_msg}"}
         
         accounts_data = data.get("data", {}).get("viewer", {}).get("accounts", [])
         if not accounts_data:
-            return {"name": account["name"], "requests": 0, "limit": WORKERS_LIMIT, "pct": 0, "error": "Account ID not found or Token lacks permissions"}
+            return {"requests": 0, "limit": WORKERS_LIMIT, "pct": 0, "error": "Account ID not found or Token lacks permissions"}
             
         invocations = accounts_data[0].get("workersInvocationsAdaptive", [])
         total_requests = sum(item.get("sum", {}).get("requests", 0) for item in invocations)
@@ -83,7 +127,6 @@ async def fetch_account_usage(client: httpx.AsyncClient, account: dict) -> dict:
         pct = min(round((total_requests / WORKERS_LIMIT) * 100, 1), 100)
         
         return {
-            "name": account["name"],
             "requests": total_requests,
             "limit": WORKERS_LIMIT,
             "pct": pct,
@@ -91,29 +134,90 @@ async def fetch_account_usage(client: httpx.AsyncClient, account: dict) -> dict:
         }
     except Exception as e:
         return {
-            "name": account["name"],
             "requests": 0,
             "limit": WORKERS_LIMIT,
             "pct": 0,
             "error": f"Connection Error: {str(e)}"
         }
 
+async def fetch_full_account_data(client: httpx.AsyncClient, account: dict) -> dict:
+    """
+    Aggregates user info and workers usage metrics for a given account.
+    """
+    if os.getenv("MOCK_CF") == "true":
+        return {
+            "account_id": account["account_id"],
+            "name": f"Mocked {account['name']}",
+            "email": f"user{account['index']}@example.com",
+            "requests": 42000 + account['index'] * 5000,
+            "limit": WORKERS_LIMIT,
+            "pct": 42.0 + account['index'] * 5.0,
+            "error": None
+        }
+
+    # 1. Fetch info (user email & account name)
+    info = await fetch_account_info(client, account["account_id"], account["api_token"])
+
+    # 2. Fetch usage
+    usage = await fetch_account_usage(client, account)
+
+    # 3. Resolve display name (Priority fallback)
+    name = info["cf_account_name"] or account["name"]
+    email = info["email"]
+
+    return {
+        "account_id": account["account_id"],
+        "name": name,
+        "email": email,
+        "requests": usage["requests"],
+        "limit": usage["limit"],
+        "pct": usage["pct"],
+        "error": usage["error"]
+    }
+
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
-    async with httpx.AsyncClient() as client:
-        tasks = [fetch_account_usage(client, acc) for acc in ACCOUNTS if acc["account_id"]]
-        results = await asyncio.gather(*tasks) if tasks else []
+    now = datetime.now(timezone.utc)
+    results_map = {}
+
+    # Use CACHE_LOCK to safely read/write cache in a concurrency-safe manner
+    async with CACHE_LOCK:
+        accounts_to_fetch = []
+        for acc in ACCOUNTS:
+            acc_id = acc["account_id"]
+            if acc_id in CACHE and CACHE[acc_id]["expires_at"] > now:
+                results_map[acc_id] = CACHE[acc_id]["data"]
+            else:
+                accounts_to_fetch.append(acc)
+
+        if accounts_to_fetch:
+            async with httpx.AsyncClient() as client:
+                tasks = [fetch_full_account_data(client, acc) for acc in accounts_to_fetch]
+                fetched_results = await asyncio.gather(*tasks)
+
+                for acc, res in zip(accounts_to_fetch, fetched_results):
+                    # Cache the result with a 15-minute expiration
+                    CACHE[acc["account_id"]] = {
+                        "data": res,
+                        "expires_at": datetime.now(timezone.utc) + CACHE_TTL
+                    }
+                    results_map[acc["account_id"]] = res
+
+    # Retrieve and preserve the parsed order of ACCOUNTS
+    results = [results_map[acc["account_id"]] for acc in ACCOUNTS if acc["account_id"] in results_map]
 
     if not results:
         return HTMLResponse("<h2>No Cloudflare accounts configured in Environment Variables.</h2>")
 
     cards_html = ""
     for res in results:
+        # If email is available, format both name and email in the card header: Name (Email)
+        display_header = f"{res['name']} ({res['email']})" if res.get("email") else res["name"]
         err_badge = f'<div style="color: #ef4444; font-size: 0.85rem; margin-top: 0.5rem;">⚠️ {res["error"]}</div>' if res["error"] else ""
         cards_html += f"""
         <div class="card">
             <div class="card-header">
-                <span>{res['name']}</span>
+                <span>{display_header}</span>
                 <span>{res['requests']:,} / {res['limit']:,}</span>
             </div>
             <div class="bar-bg">
