@@ -1,0 +1,20 @@
+
+ ⛅️ wrangler 4.120.0
+────────────────────
+Your Worker has access to the following bindings:
+Binding                                                         Resource                  Mode
+env.CF_USAGE_KV (CF_USAGE_KV_PREVIEW_ID_PLACEHOLDER)            KV Namespace              local
+env.CF_ACCOUNT_ID_1 ("bc5e10cea180fa824cae66f8c71be7a0")        Environment Variable      local
+env.CF_ACCOUNT_NAME_1 ("main")                                  Environment Variable      local
+env.CF_ACCOUNT_ID_2 ("a9646507d59147402cf414fae9bf9cf8")        Environment Variable      local
+env.CF_ACCOUNT_NAME_2 ("625")                                   Environment Variable      local
+env.CF_ACCOUNT_ID_3 ("4568e85b78a47ff9221cf3ba29642316")        Environment Variable      local
+env.CF_ACCOUNT_NAME_3 ("626")                                   Environment Variable      local
+env.CF_ACCOUNT_ID_4 ("43f397e2f081394065e417995ccae094")        Environment Variable      local
+env.CF_ACCOUNT_NAME_4 ("627")                                   Environment Variable      local
+env.CF_ACCOUNT_ID_5 ("3217c17c3c2f93221c6261ae61246c19")        Environment Variable      local
+env.CF_ACCOUNT_NAME_5 ("628")                                   Environment Variable      local
+
+⎔ Starting local server...
+[wrangler:info] Ready on http://localhost:8787
+[wrangler:info] GET / 200 OK (450ms)
