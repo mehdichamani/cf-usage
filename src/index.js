@@ -24,6 +24,15 @@ query GetWorkersUsage($accountTag: String, $date: String) {
 // In-memory cache fallback for worker isolate lifecycle
 const MEMORY_CACHE = new Map();
 
+function formatExternalUrl(url) {
+  if (!url) return "#";
+  const trimmed = url.trim();
+  if (/^(f|ht)tps?:\/\//i.test(trimmed) || trimmed.startsWith("//") || trimmed.startsWith("mailto:") || trimmed.startsWith("tel:")) {
+    return trimmed;
+  }
+  return "https://" + trimmed;
+}
+
 function parseEnvAccounts(env) {
   const accounts = [];
   for (let i = 1; i <= 10; i++) {
@@ -295,12 +304,13 @@ function renderDashboard(results, env, hasPasswordConfigured) {
 
     let linksHtml = "";
     (meta.links || []).forEach((link, idx) => {
+      const href = formatExternalUrl(link.url);
       linksHtml += `
         <div class="link-slot" data-index="${idx}">
-          <button class="delete-link-btn" onclick="deleteLink('${res.account_id}', ${idx})" title="Delete Link">
+          <button class="delete-link-btn" onclick="event.stopPropagation(); deleteLink('${res.account_id}', ${idx})" title="Delete Link">
             <i class="ti ti-x"></i>
           </button>
-          <a href="${link.url}" target="_blank" rel="noopener" class="link-anchor">
+          <a href="${href}" target="_blank" rel="noopener" class="link-anchor">
             <i class="ti ti-${link.icon || 'link'}"></i>
             <span>${link.title}</span>
           </a>
@@ -936,12 +946,13 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             background: var(--input-bg);
             border: 1px solid var(--border-color);
             border-radius: 12px;
-            padding: 0.75rem;
+            padding: 0;
             width: 100px;
             height: 100px;
             flex-shrink: 0;
             position: relative;
             transition: all 0.2s ease;
+            overflow: hidden;
         }
 
         .link-slot:hover {
@@ -962,6 +973,8 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             gap: 0.35rem;
             width: 100%;
             height: 100%;
+            padding: 0.75rem;
+            box-sizing: border-box;
             text-align: center;
         }
 
@@ -2204,6 +2217,15 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         }
 
         // Links Management & Dynamic Rendering
+        function formatExternalUrlClient(url) {
+            if (!url) return "#";
+            var trimmed = url.trim();
+            if (/^(f|ht)tps?:\\/\\//i.test(trimmed) || trimmed.startsWith("//") || trimmed.startsWith("mailto:") || trimmed.startsWith("tel:")) {
+                return trimmed;
+            }
+            return "https://" + trimmed;
+        }
+
         function renderAccountLinks(accountId) {
             const cardEl = document.querySelector('.card[data-account-id="' + accountId + '"]');
             if (!cardEl) return;
@@ -2213,12 +2235,13 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             let meta = fullMetaMap.get(accountId) || { note: "", links: [] };
             let linksHtml = "";
             (meta.links || []).forEach(function(link, idx) {
+                const href = formatExternalUrlClient(link.url);
                 linksHtml += \`
                     <div class="link-slot" data-index="\${idx}">
-                        <button class="delete-link-btn" onclick="deleteLink('\${accountId}', \${idx})" title="Delete Link">
+                        <button class="delete-link-btn" onclick="event.stopPropagation(); deleteLink('\${accountId}', \${idx})" title="Delete Link">
                             <i class="ti ti-x"></i>
                         </button>
-                        <a href="\${link.url}" target="_blank" rel="noopener" class="link-anchor">
+                        <a href="\${href}" target="_blank" rel="noopener" class="link-anchor">
                             <i class="ti ti-\${link.icon || 'link'}"></i>
                             <span>\${link.title}</span>
                         </a>
@@ -2250,13 +2273,15 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         async function submitAddLink() {
             const accountId = document.getElementById('add-link-account-id').value;
             const title = document.getElementById('link-title-input').value.trim();
-            const url = document.getElementById('link-url-input').value.trim();
+            const rawUrl = document.getElementById('link-url-input').value.trim();
             const icon = document.getElementById('link-icon-input').value.trim() || 'link';
 
-            if (!title || !url) {
+            if (!title || !rawUrl) {
                 alert(translations[currentLang]["alert-req-fields"]);
                 return;
             }
+
+            const url = formatExternalUrlClient(rawUrl);
 
             let meta = fullMetaMap.get(accountId) || { note: "", links: [] };
             if (!meta.links) meta.links = [];
@@ -2794,8 +2819,11 @@ export default {
           return new Response("KV namespace (CF_USAGE_KV) is not bound.", { status: 500 });
         }
 
-        // Limit link count to maximum 5
-        const trimmedLinks = (links || []).slice(0, 5);
+        // Limit link count to maximum 5 and ensure valid URLs
+        const trimmedLinks = (links || []).slice(0, 5).map(link => ({
+          ...link,
+          url: formatExternalUrl(link.url || "")
+        }));
 
         await env.CF_USAGE_KV.put("META_" + account_id, JSON.stringify({
           note: note || "",
