@@ -2475,7 +2475,7 @@ export default {
 
         const sanitizedAccounts = inputAccounts.map(acc => {
           let token = acc.api_token;
-          if (acc.keep_existing_token || !token) {
+          if (acc.keep_existing_token || !token || token === "••••••••••••") {
             token = existingMap.get(acc.account_id) || "";
           }
           return {
