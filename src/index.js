@@ -339,11 +339,23 @@ function renderDashboard(results, env, hasPasswordConfigured) {
 
         <!-- Note & Links Section -->
         <div class="card-meta-section">
-          <div class="note-container">
+          <div class="note-container" id="note-container-${res.account_id}">
             <i class="ti ti-notes note-icon"></i>
             <div class="note-content" onclick="enableNoteEdit('${res.account_id}')" id="note-display-${res.account_id}">${noteText}</div>
-            <textarea class="note-input" id="note-input-${res.account_id}" onblur="saveNote('${res.account_id}')" style="display: none;">${meta.note || ""}</textarea>
-            <i class="ti ti-edit note-edit-icon" onclick="enableNoteEdit('${res.account_id}')"></i>
+            <div class="note-edit-wrapper" id="note-edit-wrapper-${res.account_id}" style="display: none; width: 100%;">
+              <textarea class="note-input" id="note-input-${res.account_id}">${meta.note || ""}</textarea>
+              <div class="note-actions">
+                <button class="btn btn-primary btn-sm note-save-btn" onclick="saveNote('${res.account_id}')">
+                  <i class="ti ti-check"></i>
+                  <span data-i18n="btn-save-note">Save</span>
+                </button>
+                <button class="btn btn-sm note-cancel-btn" onclick="cancelNoteEdit('${res.account_id}')">
+                  <i class="ti ti-x"></i>
+                  <span data-i18n="btn-cancel">Cancel</span>
+                </button>
+              </div>
+            </div>
+            <i class="ti ti-edit note-edit-icon" id="note-edit-icon-${res.account_id}" onclick="enableNoteEdit('${res.account_id}')"></i>
           </div>
           <div class="links-row">
             ${linksHtml}
@@ -860,6 +872,12 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             white-space: pre-wrap;
         }
 
+        .note-edit-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
         .note-input {
             width: 100%;
             background: var(--input-bg);
@@ -870,12 +888,24 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             font-size: 0.88rem;
             padding: 0.4rem;
             resize: vertical;
-            min-height: 3rem;
+            min-height: 3.5rem;
         }
 
         .note-input:focus {
             outline: none;
             box-shadow: 0 0 8px rgba(243, 128, 32, 0.25);
+        }
+
+        .note-actions {
+            display: flex;
+            gap: 0.4rem;
+            justify-content: flex-end;
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.6rem;
+            font-size: 0.78rem;
+            border-radius: 6px;
         }
 
         .note-edit-icon {
@@ -1534,7 +1564,9 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 "theme-light": "Light",
                 "theme-dark": "Dark",
                 "unlock-settings": "Unlock Settings",
-                "unlocked": "Unlocked",
+                "unlocked": "Unlocked (Lock)",
+                "relock-settings": "Lock Settings",
+                "btn-save-note": "Save",
                 "manage-accounts": "Manage Accounts",
                 "live-edge-data": "Live Edge Data",
                 "quota-title": "Cloudflare Quota Day Progress (UTC Reset)",
@@ -1591,7 +1623,9 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 "theme-light": "روشن",
                 "theme-dark": "تاریک",
                 "unlock-settings": "باز کردن قفل تنظیمات",
-                "unlocked": "قفل باز شد",
+                "unlocked": "قفل باز شد (قفل مجدد)",
+                "relock-settings": "قفل کردن تنظیمات",
+                "btn-save-note": "ذخیره",
                 "manage-accounts": "مدیریت اکانت‌ها",
                 "live-edge-data": "دیتا زنده شبکه",
                 "quota-title": "میزان پیشرفت روزانه سهمیه کلودفلر (ریست UTC)",
@@ -1920,7 +1954,14 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 openModal('setup-password-modal');
                 return;
             }
-            document.getElementById('admin-password-input').value = cachedPassword;
+            if (cachedPassword) {
+                // Re-lock when already unlocked
+                cachedPassword = '';
+                localStorage.removeItem('dashboard_password');
+                updatePasswordUI();
+                return;
+            }
+            document.getElementById('admin-password-input').value = '';
             document.getElementById('password-error').style.display = 'none';
             openModal('password-modal');
         }
@@ -1997,20 +2038,41 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         function enableNoteEdit(accountId) {
             if (!requireUnlock()) return;
             const displayEl = document.getElementById('note-display-' + accountId);
+            const wrapperEl = document.getElementById('note-edit-wrapper-' + accountId);
+            const editIcon = document.getElementById('note-edit-icon-' + accountId);
+            if (displayEl) displayEl.style.display = 'none';
+            if (editIcon) editIcon.style.display = 'none';
+            if (wrapperEl) wrapperEl.style.display = 'flex';
             const inputEl = document.getElementById('note-input-' + accountId);
-            displayEl.style.display = 'none';
-            inputEl.style.display = 'block';
-            inputEl.focus();
+            if (inputEl) inputEl.focus();
+        }
+
+        function cancelNoteEdit(accountId) {
+            const displayEl = document.getElementById('note-display-' + accountId);
+            const wrapperEl = document.getElementById('note-edit-wrapper-' + accountId);
+            const editIcon = document.getElementById('note-edit-icon-' + accountId);
+            const inputEl = document.getElementById('note-input-' + accountId);
+            
+            let meta = fullMetaMap.get(accountId) || { note: "", links: [] };
+            if (inputEl) inputEl.value = meta.note || "";
+            if (displayEl) displayEl.style.display = 'block';
+            if (editIcon) editIcon.style.display = 'block';
+            if (wrapperEl) wrapperEl.style.display = 'none';
         }
 
         async function saveNote(accountId) {
             const displayEl = document.getElementById('note-display-' + accountId);
+            const wrapperEl = document.getElementById('note-edit-wrapper-' + accountId);
+            const editIcon = document.getElementById('note-edit-icon-' + accountId);
             const inputEl = document.getElementById('note-input-' + accountId);
-            const noteText = inputEl.value;
+            const noteText = inputEl ? inputEl.value : "";
 
-            displayEl.textContent = noteText || translations[currentLang]["no-notes"];
-            displayEl.style.display = 'block';
-            inputEl.style.display = 'none';
+            if (displayEl) {
+                displayEl.textContent = noteText || translations[currentLang]["no-notes"];
+                displayEl.style.display = 'block';
+            }
+            if (editIcon) editIcon.style.display = 'block';
+            if (wrapperEl) wrapperEl.style.display = 'none';
 
             let meta = fullMetaMap.get(accountId) || { note: "", links: [] };
             if (meta.note === noteText) return;
