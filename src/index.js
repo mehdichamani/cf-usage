@@ -82,10 +82,22 @@ async function getAccountMeta(accountId, env) {
   return { note: "", links: [] };
 }
 
-function verifyPassword(request, env) {
-  const adminPassword = env.DASHBOARD_PASSWORD;
+async function getAdminPassword(env) {
+  if (env.CF_USAGE_KV) {
+    try {
+      const pass = await env.CF_USAGE_KV.get("ADMIN_PASSWORD");
+      if (pass) return pass;
+    } catch (e) {
+      console.error("Error reading ADMIN_PASSWORD from KV:", e);
+    }
+  }
+  return null;
+}
+
+async function verifyPassword(request, env) {
+  const adminPassword = await getAdminPassword(env);
   if (!adminPassword) {
-    return false; // Deny edits completely if DASHBOARD_PASSWORD is not set
+    return false; // Deny edits completely if admin password is not configured in KV
   }
   const authHeader = request.headers.get("Authorization");
   if (authHeader && authHeader.startsWith("Bearer ")) {
@@ -513,52 +525,11 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             border-color: rgba(0, 0, 0, 0.15);
         }
 
-        /* Selector Styling */
+        /* Selector Group */
         .selector-group {
             display: flex;
             gap: 0.5rem;
             align-items: center;
-        }
-
-        .select-wrapper {
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-        }
-
-        .select-icon {
-            position: absolute;
-            left: 0.75rem;
-            pointer-events: none;
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-        }
-
-        body.rtl-mode .select-icon {
-            left: auto;
-            right: 0.75rem;
-        }
-
-        .select-btn {
-            padding-left: 2rem !important;
-            padding-right: 1.8rem !important;
-            appearance: none;
-            -webkit-appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='%239ca3af' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 0.6rem center;
-            background-size: 0.8rem;
-        }
-
-        body.rtl-mode .select-btn {
-            padding-right: 2rem !important;
-            padding-left: 1.8rem !important;
-            background-position: left 0.6rem center;
-        }
-
-        .select-btn option {
-            background-color: var(--modal-bg);
-            color: var(--text-primary);
         }
 
         .btn-primary {
@@ -1290,21 +1261,14 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             </div>
             <div class="header-actions">
                 <div class="selector-group">
-                    <div class="select-wrapper">
-                        <i class="ti ti-palette select-icon"></i>
-                        <select class="btn select-btn" id="theme-select" onchange="changeThemePreference(this.value)">
-                            <option value="system" data-i18n="theme-system">System</option>
-                            <option value="light" data-i18n="theme-light">Light</option>
-                            <option value="dark" data-i18n="theme-dark">Dark</option>
-                        </select>
-                    </div>
-                    <div class="select-wrapper">
-                        <i class="ti ti-language select-icon"></i>
-                        <select class="btn select-btn" id="lang-select" onchange="changeLanguagePreference(this.value)">
-                            <option value="en">English</option>
-                            <option value="fa">فارسی</option>
-                        </select>
-                    </div>
+                    <button class="btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Switch Theme">
+                        <i class="ti ti-device-desktop" id="theme-toggle-icon"></i>
+                        <span id="theme-toggle-text" data-i18n="theme-system">System</span>
+                    </button>
+                    <button class="btn" id="lang-toggle-btn" onclick="toggleLanguage()" title="Switch Language">
+                        <i class="ti ti-language"></i>
+                        <span id="lang-toggle-text">English</span>
+                    </button>
                 </div>
                 <button class="btn" id="lock-btn" onclick="openPasswordModal()">
                     <i class="ti ti-lock"></i>
@@ -1382,6 +1346,35 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         </div>
     </div>
 
+    <!-- Setup Password Modal (Startup) -->
+    <div class="modal" id="setup-password-modal">
+        <div class="modal-content" style="max-width: 420px;">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="ti ti-shield-lock"></i>
+                    <span data-i18n="modal-setup-title">Create Admin Password</span>
+                </div>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;" data-i18n="modal-setup-desc">
+                    Welcome! Set an administrator password to secure your dashboard settings and Cloudflare accounts.
+                </p>
+                <div class="form-group">
+                    <label class="form-label" for="setup-password-input" data-i18n="setup-password-label">New Admin Password</label>
+                    <input type="password" class="form-control" id="setup-password-input" placeholder="••••••••" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="setup-password-confirm-input" data-i18n="setup-confirm-label">Confirm Password</label>
+                    <input type="password" class="form-control" id="setup-password-confirm-input" placeholder="••••••••" onkeydown="if(event.key === 'Enter') submitSetupPassword()" />
+                </div>
+                <div style="color: #f87171; font-size: 0.8rem; margin-top: 0.5rem; display: none;" id="setup-password-error"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" style="width: 100%;" onclick="submitSetupPassword()" data-i18n="btn-create-password">Create Password</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Password Modal -->
     <div class="modal" id="password-modal">
         <div class="modal-content" style="max-width: 400px;">
@@ -1394,14 +1387,14 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             </div>
             <div class="modal-body">
                 <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;" data-i18n="modal-password-desc">
-                    Editing requires the administrator password configured in your environment as <code>DASHBOARD_PASSWORD</code>.
+                    Enter your administrator password to unlock settings and manage accounts.
                 </p>
                 <div class="form-group">
                     <label class="form-label" for="admin-password-input" data-i18n="password-label">Password</label>
                     <input type="password" class="form-control" id="admin-password-input" placeholder="••••••••" onkeydown="if(event.key === 'Enter') submitPassword()" />
                 </div>
                 <div style="color: #f87171; font-size: 0.8rem; margin-top: 0.5rem; display: none;" id="password-error" data-i18n="password-error">
-                    Invalid password or edits are disabled.
+                    Invalid password.
                 </div>
             </div>
             <div class="modal-footer">
@@ -1537,9 +1530,16 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 "no-notes": "No notes added yet.",
                 "no-notes-input-placeholder": "Add any notes here (e.g. environment, tier, custom notes)...",
                 "modal-password-title": "Enter Admin Password",
-                "modal-password-desc": "Editing requires the administrator password configured in your environment as DASHBOARD_PASSWORD.",
+                "modal-password-desc": "Enter your administrator password to unlock settings and manage accounts.",
                 "password-label": "Password",
-                "password-error": "Invalid password or edits are disabled.",
+                "password-error": "Invalid password.",
+                "modal-setup-title": "Create Admin Password",
+                "modal-setup-desc": "Welcome! Set an administrator password to secure your dashboard settings and Cloudflare accounts.",
+                "setup-password-label": "New Admin Password",
+                "setup-confirm-label": "Confirm Password",
+                "btn-create-password": "Create Password",
+                "password-mismatch": "Passwords do not match.",
+                "password-empty": "Password cannot be empty.",
                 "btn-cancel": "Cancel",
                 "btn-unlock": "Unlock",
                 "modal-add-link-title": "Add Custom Link",
@@ -1587,9 +1587,16 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 "no-notes": "هنوز یادداشتی اضافه نشده است.",
                 "no-notes-input-placeholder": "یادداشتی اضافه کنید (مثلاً محیط برنامه‌نویسی، محدودیت‌ها یا یادداشت‌های دیگر)...",
                 "modal-password-title": "وارد کردن رمز عبور مدیریت",
-                "modal-password-desc": "ویرایش تنظیمات نیازمند وارد کردن رمز عبوری است که در متغیر DASHBOARD_PASSWORD سرور ست شده است.",
+                "modal-password-desc": "برای باز کردن قفل تنظیمات و مدیریت اکانت‌ها، رمز عبور مدیریت را وارد کنید.",
                 "password-label": "رمز عبور",
-                "password-error": "رمز عبور نامعتبر است یا امکان ویرایش غیرفعال می‌باشد.",
+                "password-error": "رمز عبور نامعتبر است.",
+                "modal-setup-title": "ایجاد رمز عبور مدیریت",
+                "modal-setup-desc": "خوش آمدید! لطفاً یک رمز عبور مدیریت برای حفاظت از تنظیمات داشبورد و اکانت‌های کلودفلر تعیین نمایید.",
+                "setup-password-label": "رمز عبور جدید مدیریت",
+                "setup-confirm-label": "تکرار رمز عبور",
+                "btn-create-password": "ایجاد رمز عبور",
+                "password-mismatch": "رمز عبور و تکرار آن یکسان نیستند.",
+                "password-empty": "رمز عبور نمی‌تواند خالی باشد.",
                 "btn-cancel": "لغو",
                 "btn-unlock": "باز کردن قفل",
                 "modal-add-link-title": "افزودن لینک دلخواه",
@@ -1626,7 +1633,11 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         function applyLanguage(lang) {
             currentLang = lang;
             localStorage.setItem('language_preference', lang);
-            document.getElementById('lang-select').value = lang;
+
+            const langTextEl = document.getElementById('lang-toggle-text');
+            if (langTextEl) {
+                langTextEl.textContent = lang === 'fa' ? 'فارسی' : 'English';
+            }
 
             if (lang === 'fa') {
                 document.body.classList.add('rtl-mode');
@@ -1641,7 +1652,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             // Translate all elements with data-i18n
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
-                if (translations[lang][key]) {
+                if (translations[lang] && translations[lang][key]) {
                     el.textContent = translations[lang][key];
                 }
             });
@@ -1663,6 +1674,11 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             updatePasswordUI();
         }
 
+        function toggleLanguage() {
+            const nextLang = currentLang === 'en' ? 'fa' : 'en';
+            applyLanguage(nextLang);
+        }
+
         function changeLanguagePreference(lang) {
             applyLanguage(lang);
         }
@@ -1673,7 +1689,26 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         function applyTheme(theme) {
             currentTheme = theme;
             localStorage.setItem('theme_preference', theme);
-            document.getElementById('theme-select').value = theme;
+
+            const themeIconEl = document.getElementById('theme-toggle-icon');
+            const themeTextEl = document.getElementById('theme-toggle-text');
+
+            if (themeIconEl) {
+                if (theme === 'light') {
+                    themeIconEl.className = 'ti ti-sun';
+                } else if (theme === 'dark') {
+                    themeIconEl.className = 'ti ti-moon';
+                } else {
+                    themeIconEl.className = 'ti ti-device-desktop';
+                }
+            }
+
+            if (themeTextEl) {
+                themeTextEl.setAttribute('data-i18n', 'theme-' + theme);
+                if (translations[currentLang] && translations[currentLang]['theme-' + theme]) {
+                    themeTextEl.textContent = translations[currentLang]['theme-' + theme];
+                }
+            }
 
             const root = document.documentElement;
             root.classList.remove('theme-light', 'theme-dark');
@@ -1687,6 +1722,13 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 const isSystemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
                 root.classList.add(isSystemDark ? 'theme-dark' : 'theme-light');
             }
+        }
+
+        function toggleTheme() {
+            const modes = ['system', 'light', 'dark'];
+            const currentIndex = modes.indexOf(currentTheme);
+            const nextTheme = modes[(currentIndex + 1) % modes.length];
+            applyTheme(nextTheme);
         }
 
         function changeThemePreference(theme) {
@@ -1709,6 +1751,13 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         // Apply Language and Direction on Load (this also triggers clock update and updatePasswordUI)
         applyLanguage(currentLang);
 
+        // On first startup, automatically open setup password modal if no password is configured
+        if (!isPasswordConfigured) {
+            setTimeout(() => {
+                openModal('setup-password-modal');
+            }, 200);
+        }
+
         function getAuthHeader() {
             return {
                 "Authorization": "Bearer " + cachedPassword,
@@ -1719,7 +1768,13 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         function updatePasswordUI() {
             const lockBtn = document.getElementById('lock-btn');
             const lockText = document.getElementById('lock-text');
-            if (cachedPassword) {
+            if (!isPasswordConfigured) {
+                lockBtn.style.background = 'rgba(243, 128, 32, 0.15)';
+                lockBtn.style.borderColor = 'rgba(243, 128, 32, 0.3)';
+                lockBtn.style.color = '#f38020';
+                lockText.textContent = translations[currentLang]["btn-create-password"] || "Create Password";
+                lockBtn.querySelector('i').className = 'ti ti-shield-lock';
+            } else if (cachedPassword) {
                 lockBtn.style.background = 'rgba(16, 185, 129, 0.15)';
                 lockBtn.style.borderColor = 'rgba(16, 185, 129, 0.3)';
                 lockBtn.style.color = '#34d399';
@@ -1735,6 +1790,10 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         }
 
         function requireUnlock() {
+            if (!isPasswordConfigured) {
+                openModal('setup-password-modal');
+                return false;
+            }
             if (!cachedPassword) {
                 openPasswordModal();
                 return false;
@@ -1793,9 +1852,53 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         }
 
         function openPasswordModal() {
+            if (!isPasswordConfigured) {
+                openModal('setup-password-modal');
+                return;
+            }
             document.getElementById('admin-password-input').value = cachedPassword;
             document.getElementById('password-error').style.display = 'none';
             openModal('password-modal');
+        }
+
+        async function submitSetupPassword() {
+            const pwd = document.getElementById('setup-password-input').value;
+            const confirmPwd = document.getElementById('setup-password-confirm-input').value;
+            const errorEl = document.getElementById('setup-password-error');
+            errorEl.style.display = 'none';
+
+            if (!pwd) {
+                errorEl.textContent = translations[currentLang]["password-empty"] || "Password cannot be empty.";
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            if (pwd !== confirmPwd) {
+                errorEl.textContent = translations[currentLang]["password-mismatch"] || "Passwords do not match.";
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/setup-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: pwd })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    cachedPassword = pwd;
+                    localStorage.setItem('dashboard_password', pwd);
+                    closeModal('setup-password-modal');
+                    location.reload();
+                } else {
+                    errorEl.textContent = result.error || "Error setting password.";
+                    errorEl.style.display = 'block';
+                }
+            } catch (e) {
+                errorEl.textContent = "Error connecting to server.";
+                errorEl.style.display = 'block';
+            }
         }
 
         async function submitPassword() {
@@ -1881,22 +1984,26 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             let meta = fullMetaMap.get(accountId) || { note: "", links: [] };
             let linksHtml = "";
             (meta.links || []).forEach(function(link, idx) {
-                linksHtml += '<div class="link-slot" data-index="' + idx + '">' +
-                    '<a href="' + link.url + '" target="_blank" rel="noopener" class="link-anchor">' +
-                    '<i class="ti ti-' + (link.icon || 'link') + '"></i>' +
-                    '<span>' + link.title + '</span>' +
-                    '</a>' +
-                    '<button class="delete-link-btn" onclick="deleteLink(\'' + accountId + '\', ' + idx + ')" title="Delete Link">' +
-                    '<i class="ti ti-x"></i>' +
-                    '</button>' +
-                    '</div>';
+                linksHtml += \`
+                    <div class="link-slot" data-index="\${idx}">
+                        <a href="\${link.url}" target="_blank" rel="noopener" class="link-anchor">
+                            <i class="ti ti-\${link.icon || 'link'}"></i>
+                            <span>\${link.title}</span>
+                        </a>
+                        <button class="delete-link-btn" onclick="deleteLink('\${accountId}', \${idx})" title="Delete Link">
+                            <i class="ti ti-x"></i>
+                        </button>
+                    </div>
+                \`;
             });
 
             if ((meta.links || []).length < 5) {
-                linksHtml += '<button class="add-link-btn" onclick="openAddLinkModal(\'' + accountId + '\')" title="Add Link Slot">' +
-                    '<i class="ti ti-plus"></i>' +
-                    '<span>Add Link</span>' +
-                    '</button>';
+                linksHtml += \`
+                    <button class="add-link-btn" onclick="openAddLinkModal('\${accountId}')" title="Add Link Slot">
+                        <i class="ti ti-plus"></i>
+                        <span>Add Link</span>
+                    </button>
+                \`;
             }
 
             linksRow.innerHTML = linksHtml;
@@ -2142,16 +2249,62 @@ export default {
     }
 
     // --- API Endpoints ---
+    if (url.pathname === "/api/setup-password") {
+      if (request.method !== "POST") {
+        return new Response("Method Not Allowed", { status: 405 });
+      }
+      try {
+        const existingPassword = await getAdminPassword(env);
+        if (existingPassword) {
+          return new Response(JSON.stringify({ success: false, error: "Password has already been set up." }), {
+            status: 403,
+            headers: { "Content-Type": "application/json" }
+          });
+        }
+
+        const body = await request.json();
+        const newPassword = body.password ? body.password.trim() : "";
+        if (!newPassword) {
+          return new Response(JSON.stringify({ success: false, error: "Password cannot be empty." }), {
+            status: 400,
+            headers: { "Content-Type": "application/json" }
+          });
+        }
+
+        if (!env.CF_USAGE_KV) {
+          return new Response(JSON.stringify({ success: false, error: "KV namespace (CF_USAGE_KV) is not bound." }), {
+            status: 500,
+            headers: { "Content-Type": "application/json" }
+          });
+        }
+
+        await env.CF_USAGE_KV.put("ADMIN_PASSWORD", newPassword);
+
+        // Clear caches
+        MEMORY_CACHE.clear();
+        await purgeEdgeCache(request);
+
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { "Content-Type": "application/json" }
+        });
+      } catch (e) {
+        return new Response(JSON.stringify({ success: false, error: "Error setting password: " + e.message }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+    }
+
     if (url.pathname === "/api/verify-password") {
       if (request.method !== "POST") {
         return new Response("Method Not Allowed", { status: 405 });
       }
       try {
         const body = await request.json();
-        const serverPassword = env.DASHBOARD_PASSWORD;
+        const serverPassword = await getAdminPassword(env);
         if (!serverPassword) {
-          return new Response(JSON.stringify({ success: false, error: "Admin password is not configured on the server. Edits are disabled." }), {
-            status: 403,
+          return new Response(JSON.stringify({ success: false, error: "Admin password is not set up yet." }), {
+            status: 400,
             headers: { "Content-Type": "application/json" }
           });
         }
@@ -2176,7 +2329,7 @@ export default {
       if (request.method !== "POST") {
         return new Response("Method Not Allowed", { status: 405 });
       }
-      if (!verifyPassword(request, env)) {
+      if (!await verifyPassword(request, env)) {
         return new Response("Unauthorized or admin password not configured.", { status: 401 });
       }
 
@@ -2224,7 +2377,7 @@ export default {
       if (request.method !== "POST") {
         return new Response("Method Not Allowed", { status: 405 });
       }
-      if (!verifyPassword(request, env)) {
+      if (!await verifyPassword(request, env)) {
         return new Response("Unauthorized or admin password not configured.", { status: 401 });
       }
 
@@ -2264,7 +2417,7 @@ export default {
 
     if (url.pathname === "/api/config") {
       // Return both accounts and all metadata if password matches
-      if (!verifyPassword(request, env)) {
+      if (!await verifyPassword(request, env)) {
         return new Response("Unauthorized or admin password not configured.", { status: 401 });
       }
 
@@ -2347,7 +2500,7 @@ export default {
       }
     }
 
-    const hasPasswordConfigured = !!env.DASHBOARD_PASSWORD;
+    const hasPasswordConfigured = !!(await getAdminPassword(env));
     const html = renderDashboard(results, env, hasPasswordConfigured);
 
     // Bypass Edge cache if authorized request (always serve fresh for unlocked clients)

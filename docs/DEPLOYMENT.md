@@ -1,3 +1,5 @@
+🌐 **Languages:** **English** | [فارسی](DEPLOYMENT.fa.md)
+
 # Deploying `cf-usage` to Cloudflare Workers
 
 Deploying `cf-usage` to Cloudflare Workers ensures **0ms cold start latency**, **no idle sleep**, and **100,000 free requests per day**.
@@ -84,7 +86,7 @@ Choose one of the following deployment options:
 
 ### Option B: Automated GitHub Actions Deployment (CI/CD)
 
-The repository includes a GitHub Actions workflow located at [`.github/workflows/deploy.yml`](file:///.github/workflows/deploy.yml) that uses `cloudflare/wrangler-action` to automatically deploy changes whenever you push to the `main` branch.
+The repository includes a GitHub Actions workflow located at [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) that uses `cloudflare/wrangler-action` to automatically deploy changes whenever you push to the `main` branch.
 
 1. **Set up GitHub Secrets**:
    Go to your GitHub Repository $\rightarrow$ **Settings** $\rightarrow$ **Secrets and variables** $\rightarrow$ **Actions** $\rightarrow$ **New repository secret**:
@@ -107,32 +109,14 @@ The repository includes a GitHub Actions workflow located at [`.github/workflows
 
 ---
 
-## 4. Setting Environment Secrets in Production
+## 4. Administrative Password & First Startup Setup
 
-To use editing, add-link, and account management features, you must configure the administrative password in your environment as `DASHBOARD_PASSWORD`.
+No environment secrets or `DASHBOARD_PASSWORD` environment variables are required!
 
-### Option A: Using Wrangler CLI (Easiest)
-
-Run `wrangler secret put` to configure the dashboard administrative password:
-
-```bash
-npx wrangler secret put DASHBOARD_PASSWORD
-# Paste your secure password when prompted
-```
-
-*(Optional fallback: If you are migrating from environment variables, you can set `CF_ACCOUNT_ID_1`, `CF_API_TOKEN_1`, etc. as secrets. The dashboard will automatically import them on first load to fallback configurations if KV is empty)*
-
----
-
-### Option B: Cloudflare Web Dashboard
-
-1. Log in to the [Cloudflare Dashboard](https://dash.cloudflare.com/).
-2. Go to **Workers & Pages** $\rightarrow$ Click on **`cf-usage`**.
-3. Navigate to **Settings** $\rightarrow$ **Variables and Secrets**.
-4. Click **Add / Edit Variables** under **Environment Variables**.
-5. Add your administrative secret:
-   - `DASHBOARD_PASSWORD` = `your_secure_password`
-6. Click **Save and Deploy**.
+When you deploy and open the dashboard for the first time:
+1. A **Create Admin Password** setup modal will automatically prompt you on startup.
+2. Enter and confirm your administrative password.
+3. Your password is securely saved to Cloudflare KV (`CF_USAGE_KV`), enabling full access to account management, notes, and custom links.
 
 ---
 

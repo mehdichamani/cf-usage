@@ -1,3 +1,7 @@
+🌐 **Languages:** **English** | [فارسی](guide.fa.md)
+
+# Cloudflare API Token Permissions Guide
+
 To read the **user email** and **Workers/Account usage metrics**, configure the following permissions when creating or editing your **Cloudflare API Token** (in **My Profile** $\rightarrow$ **API Tokens**):
 
 ---
@@ -33,7 +37,6 @@ Query the `GET /client/v4/user` REST endpoint using the API Token:
 curl -X GET "https://api.cloudflare.com/client/v4/user" \
      -H "Authorization: Bearer YOUR_API_TOKEN" \
      -H "Content-Type: application/json"
-
 ```
 
 Response payload:
@@ -48,5 +51,4 @@ Response payload:
   },
   "success": true
 }
-
 ```
