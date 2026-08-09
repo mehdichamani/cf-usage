@@ -9,8 +9,7 @@
 	"kv_namespaces": [
 		{
 			"binding": "CF_USAGE_KV",
-			"id": "d83b23bde50b438aabe5cf56f239b890",
-			"remote": true
+			"id": "d83b23bde50b438aabe5cf56f239b890"
 		}
 	]
 }

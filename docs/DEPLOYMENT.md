@@ -14,11 +14,15 @@ Test the Cloudflare Worker locally on your machine:
 # 1. Install dependencies (Wrangler CLI)
 npm install
 
-# 2. Start the local Worker dev server
+# 2. Start the local Worker dev server (uses local storage by default)
 npm run dev
 ```
 
 Open `http://localhost:8787` in your browser. Wrangler will automatically load variables from `.dev.vars`.
+
+> **Note on Local Storage vs Remote KV:**
+> - **Local Storage (Default):** `npm run dev` uses Wrangler's built-in local KV storage (persisted in `.wrangler/state/`). No Cloudflare login or remote KV connection is required.
+> - **Remote KV:** If you want local development to connect to your live remote Cloudflare KV namespace, run `npx wrangler dev --remote`.
 
 ---
 

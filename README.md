@@ -19,5 +19,6 @@ A clean, modern, and light/dark theme switchable dashboard to monitor daily Clou
 You can use this dashboard with custom links to monitor and manage your panels. To bypass internet censorship and track active panels/configurations, check out these community projects:
 - **Bia Pain Bache:** [https://github.com/bia-pain-bache](https://github.com/bia-pain-bache)
 - **Nahan:** [https://github.com/itsyebekhe/nahan](https://github.com/itsyebekhe/nahan)
+- **Nova Proxy:** [https://github.com/IRNova/Nova-Proxy](https://github.com/IRNova/Nova-Proxy)
 
 These repositories provide up-to-date tools, configurations, and panels to facilitate free internet access.

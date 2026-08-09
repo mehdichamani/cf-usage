@@ -286,8 +286,8 @@ function renderDashboard(results, env, hasPasswordConfigured) {
       badgeClass = "badge-warning";
     }
 
-    const formattedRequests = Number(res.requests).toLocaleString();
-    const formattedLimit = Number(res.limit).toLocaleString();
+    const formattedRequests = Number(res.requests).toLocaleString('en-US');
+    const formattedLimit = Number(res.limit).toLocaleString('en-US');
 
     // Render static note and link slots
     const meta = res.meta || { note: "", links: [] };
@@ -328,8 +328,8 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             <span class="account-name">${displayHeader}</span>
           </div>
           <div class="usage-stats">
-            <span class="usage-count">${formattedRequests} / ${formattedLimit}</span>
-            <span class="pct-badge ${badgeClass}">${res.pct}%</span>
+            <span class="usage-count" data-raw-reqs="${formattedRequests}" data-raw-limit="${formattedLimit}">${formattedRequests} / ${formattedLimit}</span>
+            <span class="pct-badge ${badgeClass}" data-raw-pct="${res.pct}%">${res.pct}%</span>
           </div>
         </div>
         <div class="bar-bg">
@@ -354,8 +354,8 @@ function renderDashboard(results, env, hasPasswordConfigured) {
   }
 
   const overallPct = totalLimit > 0 ? ((totalRequests / totalLimit) * 100).toFixed(1) : "0.0";
-  const formattedTotalReqs = totalRequests.toLocaleString();
-  const formattedTotalLimit = totalLimit.toLocaleString();
+  const formattedTotalReqs = totalRequests.toLocaleString('en-US');
+  const formattedTotalLimit = totalLimit.toLocaleString('en-US');
 
   // Create accounts data payload to pass to the frontend safely
   const frontendAccountsData = results.map(r => ({
@@ -380,6 +380,17 @@ function renderDashboard(results, env, hasPasswordConfigured) {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
     <style>
+        :root {
+            /* Global Typography System (No Monospace Fonts) */
+            --font-english: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-persian: 'Vazirmatn', 'Inter', system-ui, -apple-system, sans-serif;
+            --font-main: var(--font-english);
+        }
+
+        :root[dir="rtl"], body.rtl-mode {
+            --font-main: var(--font-persian);
+        }
+
         :root, :root.theme-dark {
             --bg-color: #090d16;
             --card-bg: rgba(17, 24, 39, 0.75);
@@ -428,10 +439,18 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             --clock-border: rgba(2, 132, 199, 0.25);
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Strict Universal Typography Enforcement for all elements, inputs, buttons & badges */
+        *, html, body, button, input, textarea, select, optgroup, code, kbd, samp, pre {
+            font-family: var(--font-main) !important;
+        }
 
         body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background: var(--bg-color);
             background-image: 
                 radial-gradient(at 0% 0%, rgba(243, 128, 32, 0.08) 0px, transparent 50%),
@@ -444,10 +463,6 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             justify-content: space-between;
             padding: 1.5rem 1rem;
             -webkit-font-smoothing: antialiased;
-        }
-
-        body.rtl-mode {
-            font-family: 'Vazirmatn', 'Inter', system-ui, -apple-system, sans-serif;
         }
 
         .container {
@@ -624,7 +639,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             background: var(--btn-bg);
             padding: 0.25rem 0.6rem;
             border-radius: 6px;
-            font-family: monospace;
+            font-family: var(--font-main);
             font-weight: 600;
             color: var(--clock-text);
             border: 1px solid var(--clock-border);
@@ -773,13 +788,14 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             display: flex;
             align-items: center;
             gap: 0.75rem;
+            font-family: var(--font-main);
         }
 
         .usage-count {
             font-size: 0.9rem;
             font-weight: 600;
             color: var(--text-secondary);
-            font-family: monospace;
+            font-family: inherit;
         }
 
         .pct-badge {
@@ -1113,7 +1129,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         .manage-account-id {
             font-size: 0.75rem;
             color: var(--text-muted);
-            font-family: monospace;
+            font-family: inherit;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -1313,19 +1329,19 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         <div class="metrics-grid">
             <div class="metric-card">
                 <div class="metric-label" data-i18n="metric-monitored">Monitored Accounts</div>
-                <div class="metric-value">${results.length}</div>
+                <div class="metric-value" data-raw-val="${results.length}">${results.length}</div>
             </div>
             <div class="metric-card">
                 <div class="metric-label" data-i18n="metric-requests">Total Requests Today</div>
-                <div class="metric-value">${formattedTotalReqs}</div>
+                <div class="metric-value" data-raw-val="${formattedTotalReqs}">${formattedTotalReqs}</div>
             </div>
             <div class="metric-card">
                 <div class="metric-label" data-i18n="metric-free">Total Free Quota</div>
-                <div class="metric-value">${formattedTotalLimit}</div>
+                <div class="metric-value" data-raw-val="${formattedTotalLimit}">${formattedTotalLimit}</div>
             </div>
             <div class="metric-card">
                 <div class="metric-label" data-i18n="metric-usage">Overall Usage</div>
-                <div class="metric-value" style="color: ${overallPct > 75 ? '#f97316' : '#38bdf8'}">${overallPct}%</div>
+                <div class="metric-value" data-raw-val="${overallPct}%" style="color: ${overallPct > 75 ? '#f97316' : '#38bdf8'}">${overallPct}%</div>
             </div>
         </div>
 
@@ -1627,8 +1643,30 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             }
         };
 
-        // 2. Language management
+        // 2. Language management & digit formatting
         let currentLang = localStorage.getItem('language_preference') || 'en';
+
+        function toPersianDigits(str) {
+            const pDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+            return String(str)
+                .replace(/[0-9]/g, d => pDigits[parseInt(d, 10)])
+                .replace(/,/g, '٬');
+        }
+
+        function toEnglishDigits(str) {
+            const eDigits = { '۰':'0', '۱':'1', '۲':'2', '۳':'3', '۴':'4', '۵':'5', '۶':'6', '۷':'7', '۸':'8', '۹':'9' };
+            return String(str)
+                .replace(/[۰-۹]/g, d => eDigits[d])
+                .replace(/٬/g, ',');
+        }
+
+        function formatDigits(str, lang) {
+            const l = lang || currentLang;
+            if (l === 'fa') {
+                return toPersianDigits(str);
+            }
+            return toEnglishDigits(str);
+        }
 
         function applyLanguage(lang) {
             currentLang = lang;
@@ -1656,6 +1694,30 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                     el.textContent = translations[lang][key];
                 }
             });
+
+            // Format numbers in overview metric cards
+            document.querySelectorAll('.metric-value[data-raw-val]').forEach(el => {
+                const rawVal = el.getAttribute('data-raw-val');
+                el.textContent = formatDigits(rawVal, lang);
+            });
+
+            // Format numbers in account breakdown card headers
+            document.querySelectorAll('.usage-count[data-raw-reqs]').forEach(el => {
+                const reqs = formatDigits(el.getAttribute('data-raw-reqs'), lang);
+                const limit = formatDigits(el.getAttribute('data-raw-limit'), lang);
+                el.textContent = reqs + ' / ' + limit;
+            });
+
+            // Format numbers in percentage badges
+            document.querySelectorAll('.pct-badge[data-raw-pct]').forEach(el => {
+                el.textContent = formatDigits(el.getAttribute('data-raw-pct'), lang);
+            });
+
+            // Format footer copyright year
+            const yearEl = document.getElementById('year');
+            if (yearEl) {
+                yearEl.textContent = formatDigits(new Date().getFullYear(), lang);
+            }
 
             // Initialize/translate empty note displays and note placeholders
             fullMetaMap.forEach((meta, accountId) => {
@@ -1823,21 +1885,23 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             const mPad = String(m).padStart(2, '0');
             const sPad = String(s).padStart(2, '0');
 
-            if (clockEl) clockEl.textContent = hPad + ':' + mPad + ':' + sPad + ' UTC';
+            if (clockEl) clockEl.textContent = formatDigits(hPad + ':' + mPad + ':' + sPad + ' UTC', currentLang);
 
             const isFarsi = currentLang === 'fa';
             if (elapsedEl) {
-                elapsedEl.textContent = isFarsi
+                const elapsedStr = isFarsi
                     ? "⏱️ " + h + " ساعت و " + m + " دقیقه گذشته"
                     : "⏱️ " + h + "h " + m + "m elapsed";
+                elapsedEl.textContent = formatDigits(elapsedStr, currentLang);
             }
             if (remainingEl) {
-                remainingEl.textContent = isFarsi
+                const remStr = isFarsi
                     ? "⏳ " + remH + " ساعت و " + remM + " دقیقه تا ریست 00:00 UTC"
                     : "⏳ " + remH + "h " + remM + "m until 00:00 UTC reset";
+                remainingEl.textContent = formatDigits(remStr, currentLang);
             }
             if (barEl) barEl.style.width = pct + '%';
-            if (pctBadgeEl) pctBadgeEl.textContent = pct + '%';
+            if (pctBadgeEl) pctBadgeEl.textContent = formatDigits(pct + '%', currentLang);
         }
 
         setInterval(updateUtcResetBar, 1000);
@@ -2443,8 +2507,9 @@ export default {
     // --- HTML RENDER PIPELINE ---
     const accounts = await getAccounts(env);
 
-    // Check Cloudflare Edge Cache API first if not in MOCK mode and request is a GET
-    const cache = typeof caches !== "undefined" ? caches.default : null;
+    // Check Cloudflare Edge Cache API first if not in MOCK mode, not on local dev, and request is a GET
+    const isLocalDev = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+    const cache = (typeof caches !== "undefined" && !isLocalDev) ? caches.default : null;
     const cacheUrl = new URL(request.url);
     cacheUrl.pathname = "/__cached_dashboard";
     const cacheKey = new Request(cacheUrl.toString(), { method: "GET" });
@@ -2508,7 +2573,7 @@ export default {
       "Content-Type": "text/html; charset=utf-8"
     };
 
-    if (request.headers.get("Authorization")) {
+    if (isLocalDev || request.headers.get("Authorization")) {
       responseHeaders["Cache-Control"] = "no-cache, no-store, must-revalidate";
     } else {
       responseHeaders["Cache-Control"] = `public, max-age=0, s-maxage=${CACHE_TTL_SECONDS}, must-revalidate`;

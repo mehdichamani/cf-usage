@@ -19,5 +19,6 @@
 شما می‌توانید با استفاده از این داشبورد و لینک‌های سفارشی پنل‌های خود را مدیریت و پایش کنید. برای دور زدن فیلترینگ و ردیابی پنل‌های فعال و روش‌های جدید بایپس، می‌توانید پروژه‌ها و ریپازیتوری‌های زیر را دنبال کنید:
 - **Bia Pain Bache:** [https://github.com/bia-pain-bache](https://github.com/bia-pain-bache)
 - **Nahan:** [https://github.com/itsyebekhe/nahan](https://github.com/itsyebekhe/nahan)
+- **Nova Proxy:** [https://github.com/IRNova/Nova-Proxy](https://github.com/IRNova/Nova-Proxy)
 
 این ریپازیتوری‌ها ابزارها، کانفیگ‌ها و پنل‌های به‌روز را جهت تسهیل دسترسی به اینترنت آزاد ارائه می‌دهند.
