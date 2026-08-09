@@ -365,10 +365,10 @@ function renderDashboard(results, env, hasPasswordConfigured) {
     <title>Cloudflare Workers Usage Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
     <style>
-        :root {
+        :root, :root.theme-dark {
             --bg-color: #090d16;
             --card-bg: rgba(17, 24, 39, 0.75);
             --card-hover: rgba(30, 41, 59, 0.85);
@@ -380,6 +380,40 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             --cf-orange-glow: rgba(243, 128, 32, 0.25);
             --accent-cyan: #06b6d4;
             --modal-bg: #0f172a;
+            --input-bg: rgba(255, 255, 255, 0.03);
+            --btn-bg: rgba(255, 255, 255, 0.05);
+            --btn-hover: rgba(255, 255, 255, 0.1);
+            --note-bg: rgba(255, 255, 255, 0.02);
+            --note-border: rgba(255, 255, 255, 0.04);
+            --scrollbar-thumb: rgba(255, 255, 255, 0.1);
+            --text-highlight: #ffffff;
+            --h1-color: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
+            --clock-text: #38bdf8;
+            --clock-border: rgba(56, 189, 248, 0.2);
+        }
+
+        :root.theme-light {
+            --bg-color: #f3f4f6;
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --card-hover: rgba(249, 250, 251, 0.95);
+            --border-color: rgba(0, 0, 0, 0.08);
+            --text-primary: #111827;
+            --text-secondary: #4b5563;
+            --text-muted: #9ca3af;
+            --cf-orange: #f38020;
+            --cf-orange-glow: rgba(243, 128, 32, 0.12);
+            --accent-cyan: #0891b2;
+            --modal-bg: #ffffff;
+            --input-bg: rgba(0, 0, 0, 0.02);
+            --btn-bg: rgba(0, 0, 0, 0.04);
+            --btn-hover: rgba(0, 0, 0, 0.08);
+            --note-bg: rgba(0, 0, 0, 0.01);
+            --note-border: rgba(0, 0, 0, 0.03);
+            --scrollbar-thumb: rgba(0, 0, 0, 0.1);
+            --text-highlight: #111827;
+            --h1-color: linear-gradient(180deg, #111827 0%, #374151 100%);
+            --clock-text: #0284c7;
+            --clock-border: rgba(2, 132, 199, 0.25);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -398,6 +432,10 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             justify-content: space-between;
             padding: 1.5rem 1rem;
             -webkit-font-smoothing: antialiased;
+        }
+
+        body.rtl-mode {
+            font-family: 'Vazirmatn', 'Inter', system-ui, -apple-system, sans-serif;
         }
 
         .container {
@@ -439,7 +477,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             font-size: 1.5rem;
             font-weight: 700;
             letter-spacing: -0.02em;
-            background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
+            background: var(--h1-color);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -448,10 +486,11 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             display: flex;
             align-items: center;
             gap: 0.75rem;
+            flex-wrap: wrap;
         }
 
         .btn {
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--btn-bg);
             color: var(--text-primary);
             border: 1px solid var(--border-color);
             padding: 0.5rem 1rem;
@@ -466,8 +505,60 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         }
 
         .btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.2);
+            background: var(--btn-hover);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        :root.theme-light .btn:hover {
+            border-color: rgba(0, 0, 0, 0.15);
+        }
+
+        /* Selector Styling */
+        .selector-group {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .select-wrapper {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .select-icon {
+            position: absolute;
+            left: 0.75rem;
+            pointer-events: none;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        body.rtl-mode .select-icon {
+            left: auto;
+            right: 0.75rem;
+        }
+
+        .select-btn {
+            padding-left: 2rem !important;
+            padding-right: 1.8rem !important;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='%239ca3af' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.6rem center;
+            background-size: 0.8rem;
+        }
+
+        body.rtl-mode .select-btn {
+            padding-right: 2rem !important;
+            padding-left: 1.8rem !important;
+            background-position: left 0.6rem center;
+        }
+
+        .select-btn option {
+            background-color: var(--modal-bg);
+            color: var(--text-primary);
         }
 
         .btn-primary {
@@ -545,7 +636,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             gap: 0.5rem;
             font-size: 0.95rem;
             font-weight: 600;
-            color: #f3f4f6;
+            color: var(--text-primary);
         }
 
         .reset-title svg { width: 18px; height: 18px; color: var(--cf-orange); }
@@ -559,23 +650,23 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         }
 
         .clock-pill {
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--btn-bg);
             padding: 0.25rem 0.6rem;
             border-radius: 6px;
             font-family: monospace;
             font-weight: 600;
-            color: #38bdf8;
-            border: 1px solid rgba(56, 189, 248, 0.2);
+            color: var(--clock-text);
+            border: 1px solid var(--clock-border);
         }
 
         /* Animated Progress Bars */
         .bar-bg {
-            background: rgba(30, 41, 59, 0.6);
+            background: var(--input-bg);
             height: 12px;
             border-radius: 9999px;
             overflow: hidden;
             position: relative;
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         .bar-fill {
@@ -649,7 +740,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         .metric-value {
             font-size: 1.25rem;
             font-weight: 700;
-            color: #ffffff;
+            color: var(--text-highlight);
         }
 
         .section-title {
@@ -673,8 +764,8 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         }
 
         .card:hover {
-            border-color: rgba(255, 255, 255, 0.18);
-            box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.4);
+            border-color: var(--text-muted);
+            box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.2);
             background: var(--card-hover);
         }
 
@@ -703,7 +794,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         .account-name {
             font-weight: 600;
             font-size: 1rem;
-            color: #f9fafb;
+            color: var(--text-highlight);
             word-break: break-word;
         }
 
@@ -759,10 +850,10 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             display: flex;
             align-items: flex-start;
             gap: 0.5rem;
-            background: rgba(255, 255, 255, 0.02);
+            background: var(--note-bg);
             padding: 0.6rem 0.8rem;
             border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--note-border);
             position: relative;
         }
 
@@ -784,7 +875,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
 
         .note-input {
             width: 100%;
-            background: rgba(0, 0, 0, 0.3);
+            background: var(--input-bg);
             border: 1px solid var(--cf-orange);
             border-radius: 6px;
             color: var(--text-primary);
@@ -826,14 +917,14 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         }
 
         .links-row::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
+            background: var(--scrollbar-thumb);
             border-radius: 2px;
         }
 
         .link-slot {
             display: flex;
             align-items: center;
-            background: rgba(255, 255, 255, 0.03);
+            background: var(--input-bg);
             border: 1px solid var(--border-color);
             border-radius: 8px;
             padding: 0.4rem 0.75rem;
@@ -844,8 +935,8 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         }
 
         .link-slot:hover {
-            border-color: rgba(255, 255, 255, 0.15);
-            background: rgba(255, 255, 255, 0.06);
+            border-color: var(--text-muted);
+            background: var(--btn-hover);
         }
 
         .link-anchor {
@@ -960,7 +1051,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         }
 
         .close-modal-btn:hover {
-            color: #ffffff;
+            color: var(--text-highlight);
         }
 
         .modal-body {
@@ -996,7 +1087,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
 
         .form-control {
             width: 100%;
-            background: rgba(255, 255, 255, 0.03);
+            background: var(--input-bg);
             border: 1px solid var(--border-color);
             border-radius: 8px;
             color: var(--text-primary);
@@ -1024,7 +1115,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: rgba(255, 255, 255, 0.02);
+            background: var(--note-bg);
             border: 1px solid var(--border-color);
             border-radius: 10px;
             padding: 0.75rem 1rem;
@@ -1042,7 +1133,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         .manage-account-name {
             font-weight: 600;
             font-size: 0.9rem;
-            color: #ffffff;
+            color: var(--text-highlight);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -1064,7 +1155,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         }
 
         .icon-btn {
-            background: rgba(255, 255, 255, 0.04);
+            background: var(--input-bg);
             border: 1px solid var(--border-color);
             color: var(--text-secondary);
             width: 32px;
@@ -1078,8 +1169,8 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         }
 
         .icon-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: #ffffff;
+            background: var(--btn-hover);
+            color: var(--text-highlight);
         }
 
         .icon-btn-danger:hover {
@@ -1159,7 +1250,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         .footer-badge {
             font-size: 0.75rem;
             color: var(--text-muted);
-            background: rgba(255, 255, 255, 0.03);
+            background: var(--input-bg);
             padding: 0.25rem 0.6rem;
             border-radius: 9999px;
             border: 1px solid var(--border-color);
@@ -1193,22 +1284,39 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                     </svg>
                 </div>
                 <div>
-                    <h1>Cloudflare Workers Usage</h1>
-                    <span style="font-size: 0.8rem; color: var(--text-secondary);">Daily Invocation Tracker</span>
+                    <h1 data-i18n="brand-title">Cloudflare Workers Usage</h1>
+                    <span style="font-size: 0.8rem; color: var(--text-secondary);" data-i18n="brand-subtitle">Daily Invocation Tracker</span>
                 </div>
             </div>
             <div class="header-actions">
+                <div class="selector-group">
+                    <div class="select-wrapper">
+                        <i class="ti ti-palette select-icon"></i>
+                        <select class="btn select-btn" id="theme-select" onchange="changeThemePreference(this.value)">
+                            <option value="system" data-i18n="theme-system">System</option>
+                            <option value="light" data-i18n="theme-light">Light</option>
+                            <option value="dark" data-i18n="theme-dark">Dark</option>
+                        </select>
+                    </div>
+                    <div class="select-wrapper">
+                        <i class="ti ti-language select-icon"></i>
+                        <select class="btn select-btn" id="lang-select" onchange="changeLanguagePreference(this.value)">
+                            <option value="en">English</option>
+                            <option value="fa">فارسی</option>
+                        </select>
+                    </div>
+                </div>
                 <button class="btn" id="lock-btn" onclick="openPasswordModal()">
                     <i class="ti ti-lock"></i>
-                    <span id="lock-text">Unlock Settings</span>
+                    <span id="lock-text" data-i18n="unlock-settings">Unlock Settings</span>
                 </button>
                 <button class="btn btn-primary" onclick="openManageAccountsModal()">
                     <i class="ti ti-settings"></i>
-                    <span>Manage Accounts</span>
+                    <span data-i18n="manage-accounts">Manage Accounts</span>
                 </button>
                 <div class="status-badge">
                     <span class="pulse-dot"></span>
-                    <span>Live Edge Data</span>
+                    <span data-i18n="live-edge-data">Live Edge Data</span>
                 </div>
             </div>
         </header>
@@ -1221,7 +1329,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                         <circle cx="12" cy="12" r="10" />
                         <polyline points="12 6 12 12 16 14" />
                     </svg>
-                    <span>Cloudflare Quota Day Progress (UTC Reset)</span>
+                    <span data-i18n="quota-title">Cloudflare Quota Day Progress (UTC Reset)</span>
                 </div>
                 <div class="reset-meta">
                     <span id="utc-clock" class="clock-pill">${timeFormatted}</span>
@@ -1240,19 +1348,19 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         <!-- Metrics Overview Grid -->
         <div class="metrics-grid">
             <div class="metric-card">
-                <div class="metric-label">Monitored Accounts</div>
+                <div class="metric-label" data-i18n="metric-monitored">Monitored Accounts</div>
                 <div class="metric-value">${results.length}</div>
             </div>
             <div class="metric-card">
-                <div class="metric-label">Total Requests Today</div>
+                <div class="metric-label" data-i18n="metric-requests">Total Requests Today</div>
                 <div class="metric-value">${formattedTotalReqs}</div>
             </div>
             <div class="metric-card">
-                <div class="metric-label">Total Free Quota</div>
+                <div class="metric-label" data-i18n="metric-free">Total Free Quota</div>
                 <div class="metric-value">${formattedTotalLimit}</div>
             </div>
             <div class="metric-card">
-                <div class="metric-label">Overall Usage</div>
+                <div class="metric-label" data-i18n="metric-usage">Overall Usage</div>
                 <div class="metric-value" style="color: ${overallPct > 75 ? '#f97316' : '#38bdf8'}">${overallPct}%</div>
             </div>
         </div>
@@ -1264,7 +1372,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 <rect x="14" y="14" width="7" height="7" rx="1" />
                 <rect x="3" y="14" width="7" height="7" rx="1" />
             </svg>
-            <span>Account Usage Breakdown</span>
+            <span data-i18n="breakdown-title">Account Usage Breakdown</span>
         </div>
 
         ${emptyStateHtml}
@@ -1280,25 +1388,25 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             <div class="modal-header">
                 <div class="modal-title">
                     <i class="ti ti-lock"></i>
-                    <span>Enter Admin Password</span>
+                    <span data-i18n="modal-password-title">Enter Admin Password</span>
                 </div>
                 <button class="close-modal-btn" onclick="closeModal('password-modal')">×</button>
             </div>
             <div class="modal-body">
-                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;" data-i18n="modal-password-desc">
                     Editing requires the administrator password configured in your environment as <code>DASHBOARD_PASSWORD</code>.
                 </p>
                 <div class="form-group">
-                    <label class="form-label" for="admin-password-input">Password</label>
+                    <label class="form-label" for="admin-password-input" data-i18n="password-label">Password</label>
                     <input type="password" class="form-control" id="admin-password-input" placeholder="••••••••" onkeydown="if(event.key === 'Enter') submitPassword()" />
                 </div>
-                <div style="color: #f87171; font-size: 0.8rem; margin-top: 0.5rem; display: none;" id="password-error">
+                <div style="color: #f87171; font-size: 0.8rem; margin-top: 0.5rem; display: none;" id="password-error" data-i18n="password-error">
                     Invalid password or edits are disabled.
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn" onclick="closeModal('password-modal')">Cancel</button>
-                <button class="btn btn-primary" onclick="submitPassword()">Unlock</button>
+                <button class="btn" onclick="closeModal('password-modal')" data-i18n="btn-cancel">Cancel</button>
+                <button class="btn btn-primary" onclick="submitPassword()" data-i18n="btn-unlock">Unlock</button>
             </div>
         </div>
     </div>
@@ -1309,31 +1417,31 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             <div class="modal-header">
                 <div class="modal-title">
                     <i class="ti ti-plus"></i>
-                    <span>Add Custom Link</span>
+                    <span data-i18n="modal-add-link-title">Add Custom Link</span>
                 </div>
                 <button class="close-modal-btn" onclick="closeModal('add-link-modal')">×</button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="add-link-account-id" />
                 <div class="form-group">
-                    <label class="form-label" for="link-title-input">Link Title</label>
+                    <label class="form-label" for="link-title-input" data-i18n="link-title-label">Link Title</label>
                     <input type="text" class="form-control" id="link-title-input" placeholder="e.g. Workers Logs" />
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="link-url-input">URL</label>
+                    <label class="form-label" for="link-url-input" data-i18n="link-url-label">URL</label>
                     <input type="url" class="form-control" id="link-url-input" placeholder="https://..." />
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="link-icon-input">Tabler Icon Name</label>
+                    <label class="form-label" for="link-icon-input" data-i18n="link-icon-label">Tabler Icon Name</label>
                     <input type="text" class="form-control" id="link-icon-input" placeholder="e.g. server, link, cloud, brand-github" />
-                    <span style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; display: block;">
+                    <span style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; display: block;" data-i18n="link-icon-desc">
                         Supported icons list: <a href="https://tabler.io/icons" target="_blank" rel="noopener" style="color: var(--cf-orange);">tabler.io/icons</a>
                     </span>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn" onclick="closeModal('add-link-modal')">Cancel</button>
-                <button class="btn btn-primary" onclick="submitAddLink()">Add Link</button>
+                <button class="btn" onclick="closeModal('add-link-modal')" data-i18n="btn-cancel">Cancel</button>
+                <button class="btn btn-primary" onclick="submitAddLink()" data-i18n="btn-add-link">Add Link</button>
             </div>
         </div>
     </div>
@@ -1344,39 +1452,39 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             <div class="modal-header">
                 <div class="modal-title">
                     <i class="ti ti-settings"></i>
-                    <span>Manage Cloudflare Accounts</span>
+                    <span data-i18n="modal-manage-title">Manage Cloudflare Accounts</span>
                 </div>
                 <button class="close-modal-btn" onclick="closeModal('manage-accounts-modal')">×</button>
             </div>
             <div class="modal-body">
-                <div class="section-subtitle">Active Accounts</div>
+                <div class="section-subtitle" data-i18n="active-accounts-title">Active Accounts</div>
                 <div class="accounts-list-container" id="manage-accounts-list">
                     <!-- Dynamic -->
                 </div>
 
                 <div class="divider"></div>
 
-                <div class="section-subtitle" id="add-edit-account-title">Add New Account</div>
+                <div class="section-subtitle" id="add-edit-account-title" data-i18n="add-new-account-title">Add New Account</div>
                 <input type="hidden" id="edit-account-index" value="-1" />
                 <div class="form-group">
-                    <label class="form-label" for="account-name-input">Display Name</label>
+                    <label class="form-label" for="account-name-input" data-i18n="account-name-label">Display Name</label>
                     <input type="text" class="form-control" id="account-name-input" placeholder="Production Main" />
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="account-id-input">Cloudflare Account ID</label>
+                    <label class="form-label" for="account-id-input" data-i18n="account-id-label">Cloudflare Account ID</label>
                     <input type="text" class="form-control" id="account-id-input" placeholder="bc5e10cea180fa82..." />
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="account-token-input">Cloudflare API Token</label>
+                    <label class="form-label" for="account-token-input" data-i18n="account-token-label">Cloudflare API Token</label>
                     <input type="password" class="form-control" id="account-token-input" placeholder="••••••••••••••••••••••••••••••••" />
                 </div>
                 <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-                    <button class="btn" id="cancel-account-edit-btn" onclick="resetAccountForm()" style="display: none;">Cancel Edit</button>
-                    <button class="btn btn-primary" onclick="saveAccountItem()">Save Account</button>
+                    <button class="btn" id="cancel-account-edit-btn" onclick="resetAccountForm()" data-i18n="btn-cancel-edit" style="display: none;">Cancel Edit</button>
+                    <button class="btn btn-primary" onclick="saveAccountItem()" data-i18n="btn-save-account">Save Account</button>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn" onclick="closeModal('manage-accounts-modal')">Close</button>
+                <button class="btn" onclick="closeModal('manage-accounts-modal')" data-i18n="btn-close">Close</button>
             </div>
         </div>
     </div>
@@ -1385,15 +1493,15 @@ function renderDashboard(results, env, hasPasswordConfigured) {
     <footer>
         <div class="footer-container">
             <div class="footer-copyright">
-                © <span id="year">2026</span> Cloudflare Workers Usage Dashboard. All rights reserved.
+                © <span id="year">2026</span> <span data-i18n="footer-rights">Cloudflare Workers Usage Dashboard. All rights reserved.</span>
             </div>
             <div class="footer-credits">
-                <span>Developed with</span>
+                <span data-i18n="footer-developed">Developed with</span>
                 <span class="heart">❤️</span>
-                <span>by</span>
-                <a href="htttps://ajbv.ir" class="dev-link" target="_blank" rel="noopener">Mehdi Chamani</a>
+                <span data-i18n="footer-by">by</span>
+                <a href="https://ajbv.ir" class="dev-link" target="_blank" rel="noopener">Mehdi Chamani</a>
             </div>
-            <div class="footer-badge">
+            <div class="footer-badge" data-i18n="footer-powered">
                 Powered by Cloudflare Workers & Cloudflare KV
             </div>
         </div>
@@ -1408,11 +1516,198 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         const fullMetaMap = new Map(${JSON.stringify(frontendFullData)}.map(x => [x.account_id, x.meta]));
         const isPasswordConfigured = ${hasPasswordConfigured};
 
+        // 1. Translations dictionary
+        const translations = {
+            "en": {
+                "brand-title": "Cloudflare Workers Usage",
+                "brand-subtitle": "Daily Invocation Tracker",
+                "theme-system": "System",
+                "theme-light": "Light",
+                "theme-dark": "Dark",
+                "unlock-settings": "Unlock Settings",
+                "unlocked": "Unlocked",
+                "manage-accounts": "Manage Accounts",
+                "live-edge-data": "Live Edge Data",
+                "quota-title": "Cloudflare Quota Day Progress (UTC Reset)",
+                "metric-monitored": "Monitored Accounts",
+                "metric-requests": "Total Requests Today",
+                "metric-free": "Total Free Quota",
+                "metric-usage": "Overall Usage",
+                "breakdown-title": "Account Usage Breakdown",
+                "no-notes": "No notes added yet.",
+                "no-notes-input-placeholder": "Add any notes here (e.g. environment, tier, custom notes)...",
+                "modal-password-title": "Enter Admin Password",
+                "modal-password-desc": "Editing requires the administrator password configured in your environment as DASHBOARD_PASSWORD.",
+                "password-label": "Password",
+                "password-error": "Invalid password or edits are disabled.",
+                "btn-cancel": "Cancel",
+                "btn-unlock": "Unlock",
+                "modal-add-link-title": "Add Custom Link",
+                "link-title-label": "Link Title",
+                "link-url-label": "URL",
+                "link-icon-label": "Tabler Icon Name",
+                "link-icon-desc": "Supported icons list: tabler.io/icons",
+                "btn-add-link": "Add Link",
+                "modal-manage-title": "Manage Cloudflare Accounts",
+                "active-accounts-title": "Active Accounts",
+                "add-new-account-title": "Add New Account",
+                "account-name-label": "Display Name",
+                "account-id-label": "Cloudflare Account ID",
+                "account-token-label": "Cloudflare API Token",
+                "btn-cancel-edit": "Cancel Edit",
+                "btn-save-account": "Save Account",
+                "btn-close": "Close",
+                "footer-rights": "Cloudflare Workers Usage Dashboard. All rights reserved.",
+                "footer-developed": "Developed with",
+                "footer-by": "by",
+                "footer-powered": "Powered by Cloudflare Workers & Cloudflare KV",
+                "alert-req-fields": "Title and URL are required.",
+                "alert-max-links": "Maximum of 5 links reached.",
+                "alert-acc-req": "Account Name and Account ID are required.",
+                "alert-token-req": "API Token is required for new accounts.",
+                "confirm-delete-link": "Are you sure you want to delete this link?",
+                "confirm-delete-acc": "Are you sure you want to delete this account? This will also remove metadata from KV."
+            },
+            "fa": {
+                "brand-title": "میزان مصرف ورکرز کلودفلر",
+                "brand-subtitle": "پایشگر مصرف روزانه ورکرها",
+                "theme-system": "سیستم",
+                "theme-light": "روشن",
+                "theme-dark": "تاریک",
+                "unlock-settings": "باز کردن قفل تنظیمات",
+                "unlocked": "قفل باز شد",
+                "manage-accounts": "مدیریت اکانت‌ها",
+                "live-edge-data": "دیتا زنده شبکه",
+                "quota-title": "میزان پیشرفت روزانه سهمیه کلودفلر (ریست UTC)",
+                "metric-monitored": "اکانت‌های پایش شده",
+                "metric-requests": "درخواست‌های امروز",
+                "metric-free": "مجموع سهمیه رایگان",
+                "metric-usage": "میزان کل مصرف",
+                "breakdown-title": "جزئیات مصرف اکانت‌ها",
+                "no-notes": "هنوز یادداشتی اضافه نشده است.",
+                "no-notes-input-placeholder": "یادداشتی اضافه کنید (مثلاً محیط برنامه‌نویسی، محدودیت‌ها یا یادداشت‌های دیگر)...",
+                "modal-password-title": "وارد کردن رمز عبور مدیریت",
+                "modal-password-desc": "ویرایش تنظیمات نیازمند وارد کردن رمز عبوری است که در متغیر DASHBOARD_PASSWORD سرور ست شده است.",
+                "password-label": "رمز عبور",
+                "password-error": "رمز عبور نامعتبر است یا امکان ویرایش غیرفعال می‌باشد.",
+                "btn-cancel": "لغو",
+                "btn-unlock": "باز کردن قفل",
+                "modal-add-link-title": "افزودن لینک دلخواه",
+                "link-title-label": "عنوان لینک",
+                "link-url-label": "آدرس (URL) لینک",
+                "link-icon-label": "نام آیکون Tabler",
+                "link-icon-desc": "لیست آیکون‌های پشتیبانی شده: tabler.io/icons",
+                "btn-add-link": "افزودن لینک",
+                "modal-manage-title": "مدیریت اکانت‌های کلودفلر",
+                "active-accounts-title": "اکانت‌های فعال",
+                "add-new-account-title": "افزودن اکانت جدید",
+                "account-name-label": "نام نمایشی اکانت",
+                "account-id-label": "شناسه اکانت (Account ID)",
+                "account-token-label": "توکن API کلودفلر",
+                "btn-cancel-edit": "لغو ویرایش",
+                "btn-save-account": "ذخیره اکانت",
+                "btn-close": "بستن",
+                "footer-rights": "داشبورد پایش مصرف ورکرز کلودفلر. تمامی حقوق محفوظ است.",
+                "footer-developed": "توسعه یافته با",
+                "footer-by": "توسط",
+                "footer-powered": "قدرت گرفته از Cloudflare Workers و Cloudflare KV",
+                "alert-req-fields": "وارد کردن عنوان و آدرس لینک الزامی است.",
+                "alert-max-links": "حداکثر ظرفیت ۵ لینک تکمیل شده است.",
+                "alert-acc-req": "وارد کردن نام و شناسه اکانت الزامی است.",
+                "alert-token-req": "برای اکانت‌های جدید وارد کردن توکن API الزامی است.",
+                "confirm-delete-link": "آیا از حذف این لینک اطمینان دارید؟",
+                "confirm-delete-acc": "آیا از حذف این اکانت اطمینان دارید؟ با این کار تمامی متادیتای اکانت نیز از KV پاک خواهد شد."
+            }
+        };
+
+        // 2. Language management
+        let currentLang = localStorage.getItem('language_preference') || 'en';
+
+        function applyLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem('language_preference', lang);
+            document.getElementById('lang-select').value = lang;
+
+            if (lang === 'fa') {
+                document.body.classList.add('rtl-mode');
+                document.documentElement.setAttribute('dir', 'rtl');
+                document.documentElement.setAttribute('lang', 'fa');
+            } else {
+                document.body.classList.remove('rtl-mode');
+                document.documentElement.setAttribute('dir', 'ltr');
+                document.documentElement.setAttribute('lang', 'en');
+            }
+
+            // Translate all elements with data-i18n
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[lang][key]) {
+                    el.textContent = translations[lang][key];
+                }
+            });
+
+            // Initialize/translate empty note displays and note placeholders
+            fullMetaMap.forEach((meta, accountId) => {
+                const displayEl = document.getElementById('note-display-' + accountId);
+                if (displayEl) {
+                    displayEl.textContent = meta.note || translations[lang]["no-notes"];
+                }
+                const textareaEl = document.getElementById('note-input-' + accountId);
+                if (textareaEl) {
+                    textareaEl.setAttribute('placeholder', translations[lang]["no-notes-input-placeholder"]);
+                }
+            });
+
+            // Update UTC reset clock bars immediately with correct language structure
+            updateUtcResetBar();
+            updatePasswordUI();
+        }
+
+        function changeLanguagePreference(lang) {
+            applyLanguage(lang);
+        }
+
+        // 3. Theme management
+        let currentTheme = localStorage.getItem('theme_preference') || 'system';
+
+        function applyTheme(theme) {
+            currentTheme = theme;
+            localStorage.setItem('theme_preference', theme);
+            document.getElementById('theme-select').value = theme;
+
+            const root = document.documentElement;
+            root.classList.remove('theme-light', 'theme-dark');
+
+            if (theme === 'light') {
+                root.classList.add('theme-light');
+            } else if (theme === 'dark') {
+                root.classList.add('theme-dark');
+            } else {
+                // system fallback
+                const isSystemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                root.classList.add(isSystemDark ? 'theme-dark' : 'theme-light');
+            }
+        }
+
+        function changeThemePreference(theme) {
+            applyTheme(theme);
+        }
+
+        // Listen for system theme changes dynamically
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            if (currentTheme === 'system') {
+                applyTheme('system');
+            }
+        });
+
+        // Initialize theme on load
+        applyTheme(currentTheme);
+
         // Initialize state from local storage or defaults
         let cachedPassword = localStorage.getItem('dashboard_password') || '';
 
-        // Check password status on load
-        updatePasswordUI();
+        // Apply Language and Direction on Load (this also triggers clock update and updatePasswordUI)
+        applyLanguage(currentLang);
 
         function getAuthHeader() {
             return {
@@ -1428,13 +1723,13 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 lockBtn.style.background = 'rgba(16, 185, 129, 0.15)';
                 lockBtn.style.borderColor = 'rgba(16, 185, 129, 0.3)';
                 lockBtn.style.color = '#34d399';
-                lockText.textContent = 'Unlocked';
+                lockText.textContent = translations[currentLang]["unlocked"];
                 lockBtn.querySelector('i').className = 'ti ti-lock-open';
             } else {
                 lockBtn.style.background = 'rgba(255, 255, 255, 0.05)';
                 lockBtn.style.borderColor = 'var(--border-color)';
                 lockBtn.style.color = 'var(--text-primary)';
-                lockText.textContent = 'Unlock Settings';
+                lockText.textContent = translations[currentLang]["unlock-settings"];
                 lockBtn.querySelector('i').className = 'ti ti-lock';
             }
         }
@@ -1470,14 +1765,23 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             const sPad = String(s).padStart(2, '0');
 
             if (clockEl) clockEl.textContent = hPad + ':' + mPad + ':' + sPad + ' UTC';
-            if (elapsedEl) elapsedEl.textContent = '⏱️ ' + h + 'h ' + m + 'm elapsed';
-            if (remainingEl) remainingEl.textContent = '⏳ ' + remH + 'h ' + remM + 'm until 00:00 UTC reset';
+
+            const isFarsi = currentLang === 'fa';
+            if (elapsedEl) {
+                elapsedEl.textContent = isFarsi
+                    ? "⏱️ " + h + " ساعت و " + m + " دقیقه گذشته"
+                    : "⏱️ " + h + "h " + m + "m elapsed";
+            }
+            if (remainingEl) {
+                remainingEl.textContent = isFarsi
+                    ? "⏳ " + remH + " ساعت و " + remM + " دقیقه تا ریست 00:00 UTC"
+                    : "⏳ " + remH + "h " + remM + "m until 00:00 UTC reset";
+            }
             if (barEl) barEl.style.width = pct + '%';
             if (pctBadgeEl) pctBadgeEl.textContent = pct + '%';
         }
 
         setInterval(updateUtcResetBar, 1000);
-        updateUtcResetBar();
 
         // Modals management
         function openModal(id) {
@@ -1511,10 +1815,9 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                     localStorage.setItem('dashboard_password', pwd);
                     updatePasswordUI();
                     closeModal('password-modal');
-                    // Refresh view to fetch uncached data or simply visual verification
                     location.reload();
                 } else {
-                    errorEl.textContent = result.error || "Incorrect password.";
+                    errorEl.textContent = result.error || translations[currentLang]["password-error"];
                     errorEl.style.display = 'block';
                 }
             } catch (e) {
@@ -1538,12 +1841,12 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             const inputEl = document.getElementById('note-input-' + accountId);
             const noteText = inputEl.value;
 
-            displayEl.textContent = noteText || "No notes added yet.";
+            displayEl.textContent = noteText || translations[currentLang]["no-notes"];
             displayEl.style.display = 'block';
             inputEl.style.display = 'none';
 
             let meta = fullMetaMap.get(accountId) || { note: "", links: [] };
-            if (meta.note === noteText) return; // No change
+            if (meta.note === noteText) return;
 
             meta.note = noteText;
             fullMetaMap.set(accountId, meta);
@@ -1615,14 +1918,14 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             const icon = document.getElementById('link-icon-input').value.trim() || 'link';
 
             if (!title || !url) {
-                alert("Title and URL are required.");
+                alert(translations[currentLang]["alert-req-fields"]);
                 return;
             }
 
             let meta = fullMetaMap.get(accountId) || { note: "", links: [] };
             if (!meta.links) meta.links = [];
             if (meta.links.length >= 5) {
-                alert("Maximum of 5 links reached.");
+                alert(translations[currentLang]["alert-max-links"]);
                 return;
             }
 
@@ -1653,7 +1956,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
 
         async function deleteLink(accountId, index) {
             if (!requireUnlock()) return;
-            if (!confirm("Are you sure you want to delete this link?")) return;
+            if (!confirm(translations[currentLang]["confirm-delete-link"])) return;
 
             let meta = fullMetaMap.get(accountId);
             if (!meta || !meta.links) return;
@@ -1726,7 +2029,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             document.getElementById('account-id-input').value = acc.account_id;
             document.getElementById('account-token-input').value = ''; // Don't pre-populate token for security, leave blank to keep unchanged
             document.getElementById('account-token-input').placeholder = "•••••••• (Leave blank to keep unchanged)";
-            document.getElementById('add-edit-account-title').textContent = "Edit Account: " + acc.name;
+            document.getElementById('add-edit-account-title').textContent = (currentLang === 'fa' ? "ویرایش اکانت: " : "Edit Account: ") + acc.name;
             document.getElementById('cancel-account-edit-btn').style.display = 'inline-flex';
         }
 
@@ -1736,7 +2039,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             document.getElementById('account-id-input').value = '';
             document.getElementById('account-token-input').value = '';
             document.getElementById('account-token-input').placeholder = "Cloudflare API Token";
-            document.getElementById('add-edit-account-title').textContent = "Add New Account";
+            document.getElementById('add-edit-account-title').textContent = translations[currentLang]["add-new-account-title"];
             document.getElementById('cancel-account-edit-btn').style.display = 'none';
         }
 
@@ -1747,33 +2050,27 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             const api_token = document.getElementById('account-token-input').value.trim();
 
             if (!name || !account_id) {
-                alert("Account Name and Account ID are required.");
+                alert(translations[currentLang]["alert-acc-req"]);
                 return;
             }
 
             if (index === -1 && !api_token) {
-                alert("API Token is required for new accounts.");
+                alert(translations[currentLang]["alert-token-req"]);
                 return;
             }
 
             const updatedAccounts = JSON.parse(JSON.stringify(accountsData));
 
             if (index >= 0) {
-                // Update existing
                 const existing = updatedAccounts[index];
                 existing.name = name;
                 existing.account_id = account_id;
                 if (api_token) {
                     existing.api_token = api_token;
                 } else {
-                    // We must retain the existing API token on the server side.
-                    // But wait, the client doesn't have the raw API token from the injected accountsData.
-                    // To handle this properly, the API endpoint on the server should merge/keep the old api_token if not provided!
-                    // Let's pass a placeholder or keep-token property, e.g., keep_existing_token: true.
                     existing.keep_existing_token = true;
                 }
             } else {
-                // Add new
                 updatedAccounts.push({ name, account_id, api_token });
             }
 
@@ -1795,7 +2092,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         }
 
         async function deleteAccountItem(index) {
-            if (!confirm("Are you sure you want to delete this account? This will also remove metadata from KV.")) return;
+            if (!confirm(translations[currentLang]["confirm-delete-acc"])) return;
 
             const updatedAccounts = JSON.parse(JSON.stringify(accountsData));
             updatedAccounts.splice(index, 1);
@@ -1816,7 +2113,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 alert("Connection error.");
             }
         }
-    </script>
+</script>
 </body>
 </html>`;
 }
