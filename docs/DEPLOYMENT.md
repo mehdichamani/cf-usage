@@ -53,19 +53,16 @@ This will output something like:
 }
 ```
 
-### Step 2: Bind the KV Namespace in `wrangler.json`
+### Step 2: Bind the KV Namespace in `wrangler.toml`
 
-Open `wrangler.json` and update the `kv_namespaces` binding array with your new KV namespace ID:
+Open `wrangler.toml` and update the `kv_namespaces` array with your new KV namespace ID:
 
-```json
-  "kv_namespaces": [
-    {
-      "binding": "CF_USAGE_KV",
-      "id": "YOUR_KV_NAMESPACE_ID",
-      "preview_id": "YOUR_KV_PREVIEW_ID"
-    }
-  ]
+```toml
+[[kv_namespaces]]
+binding = "CF_USAGE_KV"
+id = "YOUR_KV_NAMESPACE_ID"
 ```
+
 
 ---
 

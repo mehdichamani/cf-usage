@@ -1,0 +1,10 @@
+name = "cf-usage"
+main = "src/index.js"
+compatibility_date = "2025-02-04"
+
+[observability]
+enabled = true
+
+[[kv_namespaces]]
+binding = "CF_USAGE_KV"
+id = "d83b23bde50b438aabe5cf56f239b890"

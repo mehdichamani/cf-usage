@@ -53,19 +53,16 @@ npx wrangler kv:namespace create CF_USAGE_KV
 }
 ```
 
-### گام دوم: اتصال (Bind) کردن KV در `wrangler.json`
+### گام دوم: اتصال (Bind) کردن KV در `wrangler.toml`
 
-فایل `wrangler.json` را باز کرده و شناسه (ID) جدید KV namespace خود را در بخش `kv_namespaces` قرار دهید:
+فایل `wrangler.toml` را باز کرده و شناسه (ID) جدید KV namespace خود را در بخش `kv_namespaces` قرار دهید:
 
-```json
-  "kv_namespaces": [
-    {
-      "binding": "CF_USAGE_KV",
-      "id": "YOUR_KV_NAMESPACE_ID",
-      "preview_id": "YOUR_KV_PREVIEW_ID"
-    }
-  ]
+```toml
+[[kv_namespaces]]
+binding = "CF_USAGE_KV"
+id = "YOUR_KV_NAMESPACE_ID"
 ```
+
 
 ---
 
