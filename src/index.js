@@ -297,13 +297,13 @@ function renderDashboard(results, env, hasPasswordConfigured) {
     (meta.links || []).forEach((link, idx) => {
       linksHtml += `
         <div class="link-slot" data-index="${idx}">
+          <button class="delete-link-btn" onclick="deleteLink('${res.account_id}', ${idx})" title="Delete Link">
+            <i class="ti ti-x"></i>
+          </button>
           <a href="${link.url}" target="_blank" rel="noopener" class="link-anchor">
             <i class="ti ti-${link.icon || 'link'}"></i>
             <span>${link.title}</span>
           </a>
-          <button class="delete-link-btn" onclick="deleteLink('${res.account_id}', ${idx})" title="Delete Link">
-            <i class="ti ti-x"></i>
-          </button>
         </div>
       `;
     });
@@ -919,33 +919,26 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             color: var(--text-secondary);
         }
 
-        /* Links Row: Horizontal Desktop, wrapped Mobile */
+        /* Links Row: Grid of cards, wraps automatically */
         .links-row {
             display: flex;
             flex-direction: row;
-            gap: 0.5rem;
-            flex-wrap: nowrap;
-            overflow-x: auto;
+            gap: 0.75rem;
+            flex-wrap: wrap;
             padding-bottom: 0.25rem;
-        }
-
-        .links-row::-webkit-scrollbar {
-            height: 4px;
-        }
-
-        .links-row::-webkit-scrollbar-thumb {
-            background: var(--scrollbar-thumb);
-            border-radius: 2px;
         }
 
         .link-slot {
             display: flex;
+            flex-direction: column;
             align-items: center;
+            justify-content: center;
             background: var(--input-bg);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 0.4rem 0.75rem;
-            gap: 0.5rem;
+            border-radius: 12px;
+            padding: 0.75rem;
+            width: 100px;
+            height: 100px;
             flex-shrink: 0;
             position: relative;
             transition: all 0.2s ease;
@@ -954,23 +947,47 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         .link-slot:hover {
             border-color: var(--text-muted);
             background: var(--btn-hover);
+            transform: translateY(-2px);
         }
 
         .link-anchor {
             color: var(--accent-cyan);
             text-decoration: none;
-            font-size: 0.85rem;
-            font-weight: 500;
+            font-size: 0.78rem;
+            font-weight: 600;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 0.4rem;
+            justify-content: center;
+            gap: 0.35rem;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+        }
+
+        .link-anchor i {
+            font-size: 1.75rem;
+        }
+
+        .link-anchor span {
+            white-space: normal;
+            line-height: 1.2;
+            word-break: break-word;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
 
         .link-anchor:hover {
-            text-decoration: underline;
+            text-decoration: none;
         }
 
         .delete-link-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            z-index: 2;
             background: none;
             border: none;
             color: var(--text-muted);
@@ -984,6 +1001,11 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             transition: color 0.2s ease, background 0.2s ease;
         }
 
+        [dir="rtl"] .delete-link-btn {
+            right: auto;
+            left: 4px;
+        }
+
         .delete-link-btn:hover {
             color: #ef4444;
             background: rgba(239, 68, 68, 0.1);
@@ -992,22 +1014,31 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         .add-link-btn {
             background: rgba(6, 182, 212, 0.05);
             border: 1px dashed rgba(6, 182, 212, 0.3);
-            border-radius: 8px;
+            border-radius: 12px;
             color: var(--accent-cyan);
-            padding: 0.4rem 0.75rem;
+            padding: 0.75rem;
+            width: 100px;
+            height: 100px;
             cursor: pointer;
             font-family: inherit;
-            font-size: 0.85rem;
-            font-weight: 500;
+            font-size: 0.78rem;
+            font-weight: 600;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 0.4rem;
+            justify-content: center;
+            gap: 0.35rem;
             transition: all 0.2s ease;
+        }
+
+        .add-link-btn i {
+            font-size: 1.75rem;
         }
 
         .add-link-btn:hover {
             background: rgba(6, 182, 212, 0.1);
             border-color: var(--accent-cyan);
+            transform: translateY(-2px);
         }
 
         /* Modals & Dialogs */
@@ -1485,6 +1516,39 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         </div>
     </div>
 
+    <!-- Import .env Modal -->
+    <div class="modal" id="import-env-modal" style="z-index: 110;">
+        <div class="modal-content" style="max-width: 480px;">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="ti ti-file-upload"></i>
+                    <span data-i18n="title-import-env">Import .env File</span>
+                </div>
+                <button class="close-modal-btn" onclick="closeModal('import-env-modal')">×</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.45; white-space: pre-wrap;" data-i18n="desc-import-env">
+                    Choose a .env file or paste the content below. Format example:
+                    CF_ACCOUNT_ID_1=bc5...
+                    CF_API_TOKEN_1=cfut_...
+                    CF_ACCOUNT_NAME_1=main
+                </p>
+                <div class="form-group">
+                    <label class="form-label" for="env-file-input" data-i18n="label-select-file">Select File</label>
+                    <input type="file" class="form-control" id="env-file-input" accept=".env,text/plain" onchange="handleEnvFileSelect(event)" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="env-text-input" data-i18n="label-paste-env">Or Paste Content</label>
+                    <textarea class="form-control" id="env-text-input" style="min-height: 120px; font-family: monospace !important; font-size: 0.85rem;" placeholder="CF_ACCOUNT_ID_1=bc5...&#10;CF_API_TOKEN_1=cfut_...&#10;CF_ACCOUNT_NAME_1=main"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('import-env-modal')" data-i18n="btn-cancel">Cancel</button>
+                <button class="btn btn-primary" onclick="submitImportEnv()" data-i18n="btn-import">Import</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Manage Accounts Modal -->
     <div class="modal" id="manage-accounts-modal">
         <div class="modal-content">
@@ -1496,6 +1560,17 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 <button class="close-modal-btn" onclick="closeModal('manage-accounts-modal')">×</button>
             </div>
             <div class="modal-body">
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; justify-content: flex-end;">
+                    <button class="btn btn-sm" onclick="openImportEnvModal()" title="Import .env" style="background: rgba(6, 182, 212, 0.1); border-color: rgba(6, 182, 212, 0.25); color: var(--accent-cyan);">
+                        <i class="ti ti-file-upload"></i>
+                        <span data-i18n="btn-import-env">Import .env</span>
+                    </button>
+                    <button class="btn btn-sm" onclick="exportEnvFile()" title="Export .env" style="background: rgba(243, 128, 32, 0.1); border-color: rgba(243, 128, 32, 0.25); color: var(--cf-orange);">
+                        <i class="ti ti-file-download"></i>
+                        <span data-i18n="btn-export-env">Export .env</span>
+                    </button>
+                </div>
+
                 <div class="section-subtitle" data-i18n="active-accounts-title">Active Accounts</div>
                 <div class="accounts-list-container" id="manage-accounts-list">
                     <!-- Dynamic -->
@@ -1614,7 +1689,21 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 "alert-acc-req": "Account Name and Account ID are required.",
                 "alert-token-req": "API Token is required for new accounts.",
                 "confirm-delete-link": "Are you sure you want to delete this link?",
-                "confirm-delete-acc": "Are you sure you want to delete this account? This will also remove metadata from KV."
+                "confirm-delete-acc": "Are you sure you want to delete this account? This will also remove metadata from KV.",
+                "btn-move-up": "Move Up",
+                "btn-move-down": "Move Down",
+                "btn-import-env": "Import .env",
+                "btn-export-env": "Export .env",
+                "confirm-import-env": "This will import accounts from .env, possibly overwriting existing configuration. Are you sure you want to proceed?",
+                "alert-invalid-env": "No valid CF_ACCOUNT_ID_x / CF_API_TOKEN_x formats found in the provided .env text.",
+                "title-import-env": "Import .env File",
+                "desc-import-env": "Choose a .env file or paste the content below. Format example:\\nCF_ACCOUNT_ID_1=bc5...\\nCF_API_TOKEN_1=cfut_...\\nCF_ACCOUNT_NAME_1=main",
+                "label-select-file": "Select File",
+                "label-paste-env": "Or Paste Content",
+                "placeholder-paste-env": "CF_ACCOUNT_ID_1=bc5...\\nCF_API_TOKEN_1=cfut_...\\nCF_ACCOUNT_NAME_1=main",
+                "btn-import": "Import",
+                "alert-import-success": "Accounts successfully imported from .env!",
+                "alert-export-failed": "Failed to fetch accounts config to export: "
             },
             "fa": {
                 "brand-title": "میزان مصرف ورکرز کلودفلر",
@@ -1673,7 +1762,21 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 "alert-acc-req": "وارد کردن نام و شناسه اکانت الزامی است.",
                 "alert-token-req": "برای اکانت‌های جدید وارد کردن توکن API الزامی است.",
                 "confirm-delete-link": "آیا از حذف این لینک اطمینان دارید؟",
-                "confirm-delete-acc": "آیا از حذف این اکانت اطمینان دارید؟ با این کار تمامی متادیتای اکانت نیز از KV پاک خواهد شد."
+                "confirm-delete-acc": "آیا از حذف این اکانت اطمینان دارید؟ با این کار تمامی متادیتای اکانت نیز از KV پاک خواهد شد.",
+                "btn-move-up": "انتقال به بالا",
+                "btn-move-down": "انتقال به پایین",
+                "btn-import-env": "وارد کردن .env",
+                "btn-export-env": "خروجی .env",
+                "confirm-import-env": "با این کار اکانت‌ها از فایل .env وارد شده و احتمالاً تنظیمات فعلی بازنویسی می‌شود. آیا ادامه می‌دهید؟",
+                "alert-invalid-env": "هیچ فرمت معتبری برای CF_ACCOUNT_ID_x / CF_API_TOKEN_x در متن .env یافت نشد.",
+                "title-import-env": "وارد کردن فایل .env",
+                "desc-import-env": "یک فایل .env انتخاب کنید یا محتوا را در کادر زیر قرار دهید. به عنوان مثال:\\nCF_ACCOUNT_ID_1=bc5...\\nCF_API_TOKEN_1=cfut_...\\nCF_ACCOUNT_NAME_1=main",
+                "label-select-file": "انتخاب فایل",
+                "label-paste-env": "یا قرار دادن محتوا",
+                "placeholder-paste-env": "CF_ACCOUNT_ID_1=bc5...\\nCF_API_TOKEN_1=cfut_...\\nCF_ACCOUNT_NAME_1=main",
+                "btn-import": "وارد کردن",
+                "alert-import-success": "اکانت‌ها با موفقیت از .env وارد شدند!",
+                "alert-export-failed": "خطا در دریافت پیکربندی اکانت‌ها برای خروجی: "
             }
         };
 
@@ -2112,13 +2215,13 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             (meta.links || []).forEach(function(link, idx) {
                 linksHtml += \`
                     <div class="link-slot" data-index="\${idx}">
+                        <button class="delete-link-btn" onclick="deleteLink('\${accountId}', \${idx})" title="Delete Link">
+                            <i class="ti ti-x"></i>
+                        </button>
                         <a href="\${link.url}" target="_blank" rel="noopener" class="link-anchor">
                             <i class="ti ti-\${link.icon || 'link'}"></i>
                             <span>\${link.title}</span>
                         </a>
-                        <button class="delete-link-btn" onclick="deleteLink('\${accountId}', \${idx})" title="Delete Link">
-                            <i class="ti ti-x"></i>
-                        </button>
                     </div>
                 \`;
             });
@@ -2237,12 +2340,20 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             accountsData.forEach((acc, idx) => {
                 const item = document.createElement('div');
                 item.className = 'manage-account-item';
+                const isFirst = idx === 0;
+                const isLast = idx === accountsData.length - 1;
                 item.innerHTML = \`
                     <div class="manage-account-info">
                         <div class="manage-account-name">\${acc.name}</div>
                         <div class="manage-account-id">\${acc.account_id}</div>
                     </div>
                     <div class="manage-account-actions">
+                        <button class="icon-btn" onclick="moveAccount(\${idx}, -1)" \${isFirst ? 'disabled style="opacity: 0.4; cursor: not-allowed;"' : ''} title="\${translations[currentLang]['btn-move-up'] || 'Move Up'}">
+                            <i class="ti ti-arrow-up"></i>
+                        </button>
+                        <button class="icon-btn" onclick="moveAccount(\${idx}, 1)" \${isLast ? 'disabled style="opacity: 0.4; cursor: not-allowed;"' : ''} title="\${translations[currentLang]['btn-move-down'] || 'Move Down'}">
+                            <i class="ti ti-arrow-down"></i>
+                        </button>
                         <button class="icon-btn" onclick="editAccountItem(\${idx})" title="Edit Account">
                             <i class="ti ti-edit"></i>
                         </button>
@@ -2253,6 +2364,36 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 \`;
                 listEl.appendChild(item);
             });
+        }
+
+        async function moveAccount(idx, direction) {
+            const targetIdx = idx + direction;
+            if (targetIdx < 0 || targetIdx >= accountsData.length) return;
+
+            // Swap accounts
+            const temp = accountsData[idx];
+            accountsData[idx] = accountsData[targetIdx];
+            accountsData[targetIdx] = temp;
+
+            renderManageAccountsList();
+
+            try {
+                const res = await fetch('/api/accounts', {
+                    method: 'POST',
+                    headers: getAuthHeader(),
+                    body: JSON.stringify(accountsData)
+                });
+                if (res.ok) {
+                    location.reload();
+                } else {
+                    const err = await res.text();
+                    alert("Failed to save reordered accounts: " + err);
+                    location.reload();
+                }
+            } catch (e) {
+                alert("Connection error.");
+                location.reload();
+            }
         }
 
         function editAccountItem(index) {
@@ -2344,6 +2485,141 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 }
             } catch (e) {
                 alert("Connection error.");
+            }
+        }
+
+        // Import/Export .env feature
+        function openImportEnvModal() {
+            if (!requireUnlock()) return;
+            document.getElementById('env-file-input').value = '';
+            document.getElementById('env-text-input').value = '';
+            openModal('import-env-modal');
+        }
+
+        function handleEnvFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('env-text-input').value = e.target.result;
+            };
+            reader.readAsText(file);
+        }
+
+        async function submitImportEnv() {
+            const envText = document.getElementById('env-text-input').value.trim();
+            if (!envText) {
+                alert(translations[currentLang]["alert-invalid-env"]);
+                return;
+            }
+
+            if (!confirm(translations[currentLang]["confirm-import-env"])) {
+                return;
+            }
+
+            // Parse .env logic
+            const lines = envText.split(/\\r?\\n/);
+            const rawVars = {};
+            lines.forEach(line => {
+                const cleanLine = line.trim();
+                if (!cleanLine || cleanLine.startsWith('#')) return;
+                const eqIdx = cleanLine.indexOf('=');
+                if (eqIdx === -1) return;
+                const key = cleanLine.substring(0, eqIdx).trim();
+                let value = cleanLine.substring(eqIdx + 1).trim();
+                // strip quotes if present
+                if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+                    value = value.substring(1, value.length - 1);
+                }
+                rawVars[key] = value;
+            });
+
+            // Extract accounts from parsed variables
+            const importedAccounts = [];
+            // Support indexes up to 50
+            for (let i = 1; i <= 50; i++) {
+                let accountId = rawVars['CF_ACCOUNT_ID_' + i] || rawVars['CF_ACCOUNT_' + i + '_ID'] || "";
+                let apiToken = rawVars['CF_API_TOKEN_' + i] || "";
+
+                if (i === 1) {
+                    if (!accountId) accountId = rawVars["CF_ACCOUNT_ID"] || "";
+                    if (!apiToken) apiToken = rawVars["CF_API_TOKEN"] || "";
+                }
+
+                if (accountId && apiToken) {
+                    const name = rawVars['CF_ACCOUNT_' + i + '_NAME'] || rawVars['CF_ACCOUNT_NAME_' + i] || ('Account ' + i);
+                    importedAccounts.push({
+                        name,
+                        account_id: accountId,
+                        api_token: apiToken
+                    });
+                }
+            }
+
+            if (importedAccounts.length === 0) {
+                alert(translations[currentLang]["alert-invalid-env"]);
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/accounts', {
+                    method: 'POST',
+                    headers: getAuthHeader(),
+                    body: JSON.stringify(importedAccounts)
+                });
+                if (res.ok) {
+                    alert(translations[currentLang]["alert-import-success"]);
+                    location.reload();
+                } else {
+                    const err = await res.text();
+                    alert("Failed to save imported accounts: " + err);
+                }
+            } catch (e) {
+                alert("Connection error: " + e.message);
+            }
+        }
+
+        async function exportEnvFile() {
+            if (!requireUnlock()) return;
+
+            try {
+                const res = await fetch('/api/config', {
+                    method: 'GET',
+                    headers: getAuthHeader()
+                });
+                if (!res.ok) {
+                    const err = await res.text();
+                    alert(translations[currentLang]["alert-export-failed"] + err);
+                    return;
+                }
+
+                const configData = await res.json();
+                const accounts = configData.accounts || [];
+                if (accounts.length === 0) {
+                    alert(translations[currentLang]["alert-invalid-env"]);
+                    return;
+                }
+
+                let envContent = "# Cloudflare Workers Usage Dashboard Exported Env\\n";
+                accounts.forEach((acc, index) => {
+                    const i = index + 1;
+                    envContent += '\\n# Account ' + i + ': ' + acc.name + '\\n';
+                    envContent += 'CF_ACCOUNT_ID_' + i + '=' + acc.account_id + '\\n';
+                    envContent += 'CF_API_TOKEN_' + i + '=' + acc.api_token + '\\n';
+                    envContent += 'CF_ACCOUNT_NAME_' + i + '=' + acc.name + '\\n';
+                });
+
+                const blob = new Blob([envContent], { type: 'text/plain;charset=utf-8' });
+                const downloadUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = 'cf_usage_dashboard.env';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(downloadUrl);
+            } catch (e) {
+                alert("Connection error during export: " + e.message);
             }
         }
 </script>
