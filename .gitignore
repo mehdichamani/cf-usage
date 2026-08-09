@@ -2,6 +2,5 @@
 .dev.vars
 .wrangler
 node_modules
-__pycache__
 wrangler.json
 *.log

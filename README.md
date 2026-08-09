@@ -12,7 +12,8 @@ A clean, modern, and light/dark theme switchable dashboard to monitor daily Clou
   - *Status:* Completed. Integrated Vazirmatn Persian typography font, built a bidirectional translation system (`applyLanguage('fa' | 'en')`), customized RTL layouts, and translated all static labels, dynamic clocks, modals, and prompt alerts.
 - [ ] ideas for easier deploy for end users even with phone
 - [ ] ideas password set on install or first startup
-- [ ] project is pure cloudflare worker cleanup python and render and what is not needed
+- [x] **pure Cloudflare Worker repository cleanup**
+  - *Status:* Completed. Removed all legacy Python files, Dockerfile, render.yaml, and cache files.
 - [ ] add readme in persian for users + explain they can track panels like https://github.com/bia-pain-bache , https://github.com/itsyebekhe/nahan for bypass iran censorship
 
 ---
