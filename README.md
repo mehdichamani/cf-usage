@@ -10,7 +10,7 @@ A clean, modern, and light/dark theme switchable dashboard to monitor daily Clou
 
 - 📋 [TODO & Roadmap](docs/TODO.md) - View task list, completed features, and future plans.
 - 🚀 [Deployment Guide](docs/DEPLOYMENT.md) - Step-by-step instructions for local development and Cloudflare Workers deployment.
-- 🔑 [API Token Permissions Guide](docs/guide.md) - Required Cloudflare API Token permissions and configuration guide.
+- 🔑 [API Token Permissions Guide](docs/guide.md) - One-click pre-configured token creation link & required permissions guide.
 
 ---
 

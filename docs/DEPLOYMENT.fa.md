@@ -91,7 +91,7 @@ id = "YOUR_KV_NAMESPACE_ID"
 
 1. **تنظیم Secrets در گیت‌هاب**:
    به ریپازیتوری گیت‌هاب بروید $\rightarrow$ **Settings** $\rightarrow$ **Secrets and variables** $\rightarrow$ **Actions** $\rightarrow$ **New repository secret**:
-   - `CLOUDFLARE_API_TOKEN`: توکن API کلودفلر شما (از بخش **Cloudflare Dashboard** $\rightarrow$ **My Profile** $\rightarrow$ **API Tokens** با قالب **Edit Cloudflare Workers**).
+   - `CLOUDFLARE_API_TOKEN`: توکن API کلودفلر شما (می‌توانید با استفاده از [لینک ساخت سریع توکن](guide.fa.md#-ساخت-سریع-توکن-با-یک-کلیک) یا به صورت دستی از بخش **Cloudflare Dashboard** $\rightarrow$ **My Profile** $\rightarrow$ **API Tokens** آن را بسازید).
    - `CLOUDFLARE_ACCOUNT_ID`: شناسه اکانت کلودفلر شما (موجود در صفحه اصلی داشبورد کلودفلر یا آدرس URL).
 
 2. **دیپلوی با Git Push**:

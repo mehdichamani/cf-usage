@@ -91,7 +91,7 @@ The repository includes a GitHub Actions workflow located at [`.github/workflows
 
 1. **Set up GitHub Secrets**:
    Go to your GitHub Repository $\rightarrow$ **Settings** $\rightarrow$ **Secrets and variables** $\rightarrow$ **Actions** $\rightarrow$ **New repository secret**:
-   - `CLOUDFLARE_API_TOKEN`: Your Cloudflare API Token (Create under **Cloudflare Dashboard** $\rightarrow$ **My Profile** $\rightarrow$ **API Tokens** using the **Edit Cloudflare Workers** template).
+   - `CLOUDFLARE_API_TOKEN`: Your Cloudflare API Token (Create easily using the [Pre-Configured Token Creation Link](guide.md#-quick-setup-one-click-token-creation) or manually under **Cloudflare Dashboard** $\rightarrow$ **My Profile** $\rightarrow$ **API Tokens**).
    - `CLOUDFLARE_ACCOUNT_ID`: Your Cloudflare Account ID (Found on the Cloudflare Dashboard overview page or URL).
 
 2. **Deploy via Git Push**:
