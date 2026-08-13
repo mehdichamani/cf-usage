@@ -1742,8 +1742,8 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 "btn-import": "Import",
                 "alert-import-success": "Accounts successfully imported from .env!",
                 "alert-export-failed": "Failed to fetch accounts config to export: ",
-                "account-id-help": "Find your Account ID on your <a href=\"https://dash.cloudflare.com/\" target=\"_blank\" rel=\"noopener\">Cloudflare Dashboard</a>",
-                "account-token-help": "Recommended: <a href=\"https://dash.cloudflare.com/profile/api-tokens?accountId=%2A&name=cf-usage&permissionGroupKeys=%5B%7B%22key%22%3A%22account_analytics%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22user_details%22%2C%22type%22%3A%22read%22%7D%5D&zoneId=all\" target=\"_blank\" rel=\"noopener\">Quick One-Click Token Setup</a> or <a href=\"https://dash.cloudflare.com/profile/api-tokens\" target=\"_blank\" rel=\"noopener\">Manual Setup</a>."
+                "account-id-help": "Find your Account ID on your <a href=\\\"https://dash.cloudflare.com/\\\" target=\\\"_blank\\\" rel=\\\"noopener\\\">Cloudflare Dashboard</a>",
+                "account-token-help": "Recommended: <a href=\\\"https://dash.cloudflare.com/profile/api-tokens?accountId=%2A&name=cf-usage&permissionGroupKeys=%5B%7B%22key%22%3A%22account_analytics%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22user_details%22%2C%22type%22%3A%22read%22%7D%5D&zoneId=all\\\" target=\\\"_blank\\\" rel=\\\"noopener\\\">Quick One-Click Token Setup</a> or <a href=\\\"https://dash.cloudflare.com/profile/api-tokens\\\" target=\\\"_blank\\\" rel=\\\"noopener\\\">Manual Setup</a>."
             },
             "fa": {
                 "brand-title": "میزان مصرف ورکرز کلودفلر",
@@ -1817,8 +1817,8 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 "btn-import": "وارد کردن",
                 "alert-import-success": "اکانت‌ها با موفقیت از .env وارد شدند!",
                 "alert-export-failed": "خطا در دریافت پیکربندی اکانت‌ها برای خروجی: ",
-                "account-id-help": "شناسه اکانت خود را در <a href=\"https://dash.cloudflare.com/\" target=\"_blank\" rel=\"noopener\">داشبورد کلودفلر</a> پیدا کنید.",
-                "account-token-help": "پیشنهاد شده: <a href=\"https://dash.cloudflare.com/profile/api-tokens?accountId=%2A&name=cf-usage&permissionGroupKeys=%5B%7B%22key%22%3A%22account_analytics%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22user_details%22%2C%22type%22%3A%22read%22%7D%5D&zoneId=all\" target=\"_blank\" rel=\"noopener\">ساخت سریع توکن (با یک کلیک)</a> یا <a href=\"https://dash.cloudflare.com/profile/api-tokens\" target=\"_blank\" rel=\"noopener\">تنظیم دستی</a>."
+                "account-id-help": "شناسه اکانت خود را در <a href=\\\"https://dash.cloudflare.com/\\\" target=\\\"_blank\\\" rel=\\\"noopener\\\">داشبورد کلودفلر</a> پیدا کنید.",
+                "account-token-help": "پیشنهاد شده: <a href=\\\"https://dash.cloudflare.com/profile/api-tokens?accountId=%2A&name=cf-usage&permissionGroupKeys=%5B%7B%22key%22%3A%22account_analytics%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22user_details%22%2C%22type%22%3A%22read%22%7D%5D&zoneId=all\\\" target=\\\"_blank\\\" rel=\\\"noopener\\\">ساخت سریع توکن (با یک کلیک)</a> یا <a href=\\\"https://dash.cloudflare.com/profile/api-tokens\\\" target=\\\"_blank\\\" rel=\\\"noopener\\\">تنظیم دستی</a>."
             }
         };
 
