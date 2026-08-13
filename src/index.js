@@ -1164,6 +1164,25 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             box-shadow: 0 0 8px rgba(243, 128, 32, 0.2);
         }
 
+        .form-help-text {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.35rem;
+            line-height: 1.4;
+        }
+
+        .form-help-text a {
+            color: var(--accent-cyan);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s ease, text-decoration 0.2s ease;
+        }
+
+        .form-help-text a:hover {
+            color: var(--cf-orange);
+            text-decoration: underline;
+        }
+
         /* Manage Accounts UI */
         .accounts-list-container {
             display: flex;
@@ -1600,10 +1619,16 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 <div class="form-group">
                     <label class="form-label" for="account-id-input" data-i18n="account-id-label">Cloudflare Account ID</label>
                     <input type="text" class="form-control" id="account-id-input" placeholder="bc5e10cea180fa82..." />
+                    <div class="form-help-text" data-i18n-html="account-id-help">
+                        Find your Account ID on your <a href="https://dash.cloudflare.com/" target="_blank" rel="noopener">Cloudflare Dashboard</a>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="account-token-input" data-i18n="account-token-label">Cloudflare API Token</label>
                     <input type="password" class="form-control" id="account-token-input" placeholder="••••••••••••••••••••••••••••••••" />
+                    <div class="form-help-text" data-i18n-html="account-token-help">
+                        Recommended: <a href="https://dash.cloudflare.com/profile/api-tokens?accountId=%2A&name=cf-usage&permissionGroupKeys=%5B%7B%22key%22%3A%22account_analytics%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22user_details%22%2C%22type%22%3A%22read%22%7D%5D&zoneId=all" target="_blank" rel="noopener">Quick One-Click Token Setup</a> or <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" rel="noopener">Manual Setup</a>.
+                    </div>
                 </div>
                 <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
                     <button class="btn" id="cancel-account-edit-btn" onclick="resetAccountForm()" data-i18n="btn-cancel-edit" style="display: none;">Cancel Edit</button>
@@ -1716,7 +1741,9 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 "placeholder-paste-env": "CF_ACCOUNT_ID_1=bc5...\\nCF_API_TOKEN_1=cfut_...\\nCF_ACCOUNT_NAME_1=main",
                 "btn-import": "Import",
                 "alert-import-success": "Accounts successfully imported from .env!",
-                "alert-export-failed": "Failed to fetch accounts config to export: "
+                "alert-export-failed": "Failed to fetch accounts config to export: ",
+                "account-id-help": "Find your Account ID on your <a href=\"https://dash.cloudflare.com/\" target=\"_blank\" rel=\"noopener\">Cloudflare Dashboard</a>",
+                "account-token-help": "Recommended: <a href=\"https://dash.cloudflare.com/profile/api-tokens?accountId=%2A&name=cf-usage&permissionGroupKeys=%5B%7B%22key%22%3A%22account_analytics%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22user_details%22%2C%22type%22%3A%22read%22%7D%5D&zoneId=all\" target=\"_blank\" rel=\"noopener\">Quick One-Click Token Setup</a> or <a href=\"https://dash.cloudflare.com/profile/api-tokens\" target=\"_blank\" rel=\"noopener\">Manual Setup</a>."
             },
             "fa": {
                 "brand-title": "میزان مصرف ورکرز کلودفلر",
@@ -1789,7 +1816,9 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 "placeholder-paste-env": "CF_ACCOUNT_ID_1=bc5...\\nCF_API_TOKEN_1=cfut_...\\nCF_ACCOUNT_NAME_1=main",
                 "btn-import": "وارد کردن",
                 "alert-import-success": "اکانت‌ها با موفقیت از .env وارد شدند!",
-                "alert-export-failed": "خطا در دریافت پیکربندی اکانت‌ها برای خروجی: "
+                "alert-export-failed": "خطا در دریافت پیکربندی اکانت‌ها برای خروجی: ",
+                "account-id-help": "شناسه اکانت خود را در <a href=\"https://dash.cloudflare.com/\" target=\"_blank\" rel=\"noopener\">داشبورد کلودفلر</a> پیدا کنید.",
+                "account-token-help": "پیشنهاد شده: <a href=\"https://dash.cloudflare.com/profile/api-tokens?accountId=%2A&name=cf-usage&permissionGroupKeys=%5B%7B%22key%22%3A%22account_analytics%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22user_details%22%2C%22type%22%3A%22read%22%7D%5D&zoneId=all\" target=\"_blank\" rel=\"noopener\">ساخت سریع توکن (با یک کلیک)</a> یا <a href=\"https://dash.cloudflare.com/profile/api-tokens\" target=\"_blank\" rel=\"noopener\">تنظیم دستی</a>."
             }
         };
 
@@ -1842,6 +1871,14 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 const key = el.getAttribute('data-i18n');
                 if (translations[lang] && translations[lang][key]) {
                     el.textContent = translations[lang][key];
+                }
+            });
+
+            // Translate all elements with data-i18n-html
+            document.querySelectorAll('[data-i18n-html]').forEach(el => {
+                const key = el.getAttribute('data-i18n-html');
+                if (translations[lang] && translations[lang][key]) {
+                    el.innerHTML = translations[lang][key];
                 }
             });
 
