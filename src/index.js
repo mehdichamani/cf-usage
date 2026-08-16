@@ -260,47 +260,86 @@ function renderDashboard(results, env, hasPasswordConfigured) {
   if (!results || results.length === 0) {
     emptyStateHtml = `
     <div class="empty-container">
-        <h2>No Accounts Configured</h2>
-        <p>No Cloudflare accounts configured. Click <strong>⚙️ Manage Accounts</strong> in the top-right to add accounts.</p>
+        <div class="empty-icon-wrap">
+            <i class="ti ti-server-off"></i>
+        </div>
+        <h2 data-i18n="empty-title">No Accounts Configured</h2>
+        <p data-i18n="empty-desc">No Cloudflare accounts are currently monitored. Click <strong>⚙️ Manage Accounts</strong> in the top header to connect your accounts.</p>
+        <button class="btn btn-primary" onclick="openManageAccountsModal()" style="margin-top: 1rem;">
+            <i class="ti ti-plus"></i>
+            <span data-i18n="add-new-account-title">Add New Account</span>
+        </button>
     </div>`;
   }
 
   let totalRequests = 0;
   let totalLimit = 0;
+  let warningCount = 0;
+  let criticalCount = 0;
+  let normalCount = 0;
+  let errorCount = 0;
 
   let cardsHtml = "";
-  for (const res of results) {
+  for (let accIdx = 0; accIdx < results.length; accIdx++) {
+    const res = results[accIdx];
     totalRequests += Number(res.requests || 0);
     totalLimit += Number(res.limit || WORKERS_LIMIT);
 
     let displayHeader = res.name;
+    let emailBadge = "";
     if (res.email) {
       const nameLower = res.name.toLowerCase();
       const emailLower = res.email.toLowerCase();
       if (!nameLower.includes(emailLower) && !emailLower.includes(nameLower)) {
-        displayHeader = `${res.name} (${res.email})`;
+        emailBadge = `<span class="account-email-pill"><i class="ti ti-mail"></i> ${res.email}</span>`;
       }
     }
+
+    let statusCategory = "normal";
+    if (res.error) {
+      statusCategory = "error";
+      errorCount++;
+    } else if (res.pct > 90) {
+      statusCategory = "critical";
+      criticalCount++;
+    } else if (res.pct > 75) {
+      statusCategory = "warning";
+      warningCount++;
+    } else {
+      normalCount++;
+    }
+
     const errBadge = res.error
-      ? `<div class="error-badge"><span>⚠️</span> ${res.error}</div>`
+      ? `<div class="error-badge"><i class="ti ti-alert-triangle"></i><span>${res.error}</span></div>`
       : "";
 
-    let barGradient = "linear-gradient(90deg, #3b82f6, #06b6d4)";
+    let barGradient = "linear-gradient(90deg, #3b82f6 0%, #06b6d4 100%)";
     let badgeClass = "badge-normal";
+    let statusGlow = "rgba(6, 182, 212, 0.4)";
     if (res.pct > 90) {
-      barGradient = "linear-gradient(90deg, #f43f5e, #ef4444)";
+      barGradient = "linear-gradient(90deg, #f43f5e 0%, #ef4444 100%)";
       badgeClass = "badge-danger";
+      statusGlow = "rgba(239, 68, 68, 0.5)";
     } else if (res.pct > 75) {
-      barGradient = "linear-gradient(90deg, #f59e0b, #f97316)";
+      barGradient = "linear-gradient(90deg, #f59e0b 0%, #ea580c 100%)";
       badgeClass = "badge-warning";
+      statusGlow = "rgba(245, 158, 11, 0.5)";
     }
 
     const formattedRequests = Number(res.requests).toLocaleString('en-US');
     const formattedLimit = Number(res.limit).toLocaleString('en-US');
 
+    // Account initials for modern avatar
+    const initials = (res.name || "A")
+      .split(" ")
+      .map(w => w[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase();
+
     // Render static note and link slots
     const meta = res.meta || { note: "", links: [] };
-    const noteText = meta.note || "No notes added yet.";
+    const noteText = meta.note || "";
 
     let linksHtml = "";
     (meta.links || []).forEach((link, idx) => {
@@ -311,8 +350,11 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             <i class="ti ti-x"></i>
           </button>
           <a href="${href}" target="_blank" rel="noopener" class="link-anchor">
-            <i class="ti ti-${link.icon || 'link'}"></i>
-            <span>${link.title}</span>
+            <div class="link-icon-circle">
+              <i class="ti ti-${link.icon || 'link'}"></i>
+            </div>
+            <span class="link-title-text">${link.title}</span>
+            <i class="ti ti-arrow-up-right link-external-icon"></i>
           </a>
         </div>
       `;
@@ -321,54 +363,86 @@ function renderDashboard(results, env, hasPasswordConfigured) {
     if ((meta.links || []).length < 5) {
       linksHtml += `
         <button class="add-link-btn" onclick="openAddLinkModal('${res.account_id}')" title="Add Link Slot">
-          <i class="ti ti-plus"></i>
-          <span>Add Link</span>
+          <div class="add-link-icon-wrap">
+            <i class="ti ti-plus"></i>
+          </div>
+          <span data-i18n="btn-add-link">Add Link</span>
         </button>
       `;
     }
 
     cardsHtml += `
-      <div class="card" data-account-id="${res.account_id}">
+      <div class="card" data-account-id="${res.account_id}" data-category="${statusCategory}" data-search="${(res.name + ' ' + (res.email || '') + ' ' + res.account_id).toLowerCase()}">
+        <div class="card-accent-bar" style="background: ${barGradient};"></div>
         <div class="card-header">
           <div class="account-title">
-            <svg class="account-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19 21v-2a4 4 0 00-4-4H9a4 4 0 00-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-            <span class="account-name">${displayHeader}</span>
+            <div class="account-avatar">
+              <span>${initials}</span>
+            </div>
+            <div class="account-info-text">
+              <div class="account-name-row">
+                <span class="account-name">${displayHeader}</span>
+                <span class="account-index-badge">#${accIdx + 1}</span>
+              </div>
+              <div class="account-submeta">
+                ${emailBadge}
+                <span class="account-id-chip" title="Account ID"><i class="ti ti-key"></i> ${res.account_id.substring(0, 10)}...</span>
+              </div>
+            </div>
           </div>
           <div class="usage-stats">
-            <span class="usage-count" data-raw-reqs="${formattedRequests}" data-raw-limit="${formattedLimit}">${formattedRequests} / ${formattedLimit}</span>
+            <div class="usage-stats-detail">
+              <span class="usage-label" data-i18n="usage-invocations">Invocations Today</span>
+              <span class="usage-count" data-raw-reqs="${formattedRequests}" data-raw-limit="${formattedLimit}">
+                <strong>${formattedRequests}</strong> / ${formattedLimit}
+              </span>
+            </div>
             <span class="pct-badge ${badgeClass}" data-raw-pct="${res.pct}%">${res.pct}%</span>
           </div>
         </div>
+
         <div class="bar-bg">
-          <div class="bar-fill" style="width: ${res.pct}%; background: ${barGradient};"></div>
+          <div class="bar-fill" style="width: ${res.pct}%; background: ${barGradient}; box-shadow: 0 0 12px ${statusGlow};"></div>
         </div>
         ${errBadge}
 
         <!-- Note & Links Section -->
         <div class="card-meta-section">
           <div class="note-container" id="note-container-${res.account_id}">
-            <i class="ti ti-notes note-icon"></i>
-            <div class="note-content" onclick="enableNoteEdit('${res.account_id}')" id="note-display-${res.account_id}">${noteText}</div>
+            <div class="note-header-row">
+              <div class="note-label">
+                <i class="ti ti-notes note-icon"></i>
+                <span data-i18n="note-label">Account Notes</span>
+              </div>
+              <button class="note-edit-btn" id="note-edit-icon-${res.account_id}" onclick="enableNoteEdit('${res.account_id}')" title="Edit Note">
+                <i class="ti ti-edit"></i>
+                <span data-i18n="edit-note">Edit</span>
+              </button>
+            </div>
+            <div class="note-content ${!noteText ? 'note-empty-state' : ''}" onclick="enableNoteEdit('${res.account_id}')" id="note-display-${res.account_id}">${noteText || "No notes added yet."}</div>
             <div class="note-edit-wrapper" id="note-edit-wrapper-${res.account_id}" style="display: none; width: 100%;">
-              <textarea class="note-input" id="note-input-${res.account_id}">${meta.note || ""}</textarea>
+              <textarea class="note-input" id="note-input-${res.account_id}" placeholder="Add notes here (e.g. staging, workers list, tier)...">${meta.note || ""}</textarea>
               <div class="note-actions">
-                <button class="btn btn-primary btn-sm note-save-btn" onclick="saveNote('${res.account_id}')">
-                  <i class="ti ti-check"></i>
-                  <span data-i18n="btn-save-note">Save</span>
-                </button>
                 <button class="btn btn-sm note-cancel-btn" onclick="cancelNoteEdit('${res.account_id}')">
                   <i class="ti ti-x"></i>
                   <span data-i18n="btn-cancel">Cancel</span>
                 </button>
+                <button class="btn btn-primary btn-sm note-save-btn" onclick="saveNote('${res.account_id}')">
+                  <i class="ti ti-check"></i>
+                  <span data-i18n="btn-save-note">Save Note</span>
+                </button>
               </div>
             </div>
-            <i class="ti ti-edit note-edit-icon" id="note-edit-icon-${res.account_id}" onclick="enableNoteEdit('${res.account_id}')"></i>
           </div>
-          <div class="links-row">
-            ${linksHtml}
+
+          <div class="links-section">
+            <div class="links-section-header">
+              <i class="ti ti-link"></i>
+              <span data-i18n="quick-links">Quick Links</span>
+            </div>
+            <div class="links-row">
+              ${linksHtml}
+            </div>
           </div>
         </div>
       </div>
@@ -399,11 +473,10 @@ function renderDashboard(results, env, hasPasswordConfigured) {
     <title>Cloudflare Workers Usage Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
     <style>
         :root {
-            /* Global Typography System (No Monospace Fonts) */
             --font-english: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             --font-persian: 'Vazirmatn', 'Inter', system-ui, -apple-system, sans-serif;
             --font-main: var(--font-english);
@@ -415,50 +488,70 @@ function renderDashboard(results, env, hasPasswordConfigured) {
 
         :root, :root.theme-dark {
             --bg-color: #090d16;
-            --card-bg: rgba(17, 24, 39, 0.75);
+            --bg-mesh: radial-gradient(at 0% 0%, rgba(243, 128, 32, 0.12) 0px, transparent 50%),
+                       radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+                       radial-gradient(at 50% 100%, rgba(6, 182, 212, 0.08) 0px, transparent 50%);
+            --card-bg: rgba(15, 23, 42, 0.65);
             --card-hover: rgba(30, 41, 59, 0.85);
-            --border-color: rgba(255, 255, 255, 0.08);
-            --text-primary: #f3f4f6;
-            --text-secondary: #9ca3af;
-            --text-muted: #6b7280;
+            --card-glass-border: rgba(255, 255, 255, 0.08);
+            --card-inset-shine: rgba(255, 255, 255, 0.05);
+            --border-color: rgba(255, 255, 255, 0.09);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
             --cf-orange: #f38020;
-            --cf-orange-glow: rgba(243, 128, 32, 0.25);
+            --cf-orange-hover: #e0731a;
+            --cf-orange-glow: rgba(243, 128, 32, 0.35);
+            --cf-gradient: linear-gradient(135deg, #f38020 0%, #ff9838 100%);
             --accent-cyan: #06b6d4;
+            --accent-indigo: #6366f1;
             --modal-bg: #0f172a;
-            --input-bg: rgba(255, 255, 255, 0.03);
-            --btn-bg: rgba(255, 255, 255, 0.05);
-            --btn-hover: rgba(255, 255, 255, 0.1);
-            --note-bg: rgba(255, 255, 255, 0.02);
-            --note-border: rgba(255, 255, 255, 0.04);
-            --scrollbar-thumb: rgba(255, 255, 255, 0.1);
+            --modal-overlay: rgba(3, 7, 18, 0.75);
+            --input-bg: rgba(15, 23, 42, 0.6);
+            --btn-bg: rgba(255, 255, 255, 0.06);
+            --btn-hover: rgba(255, 255, 255, 0.12);
+            --note-bg: rgba(2, 6, 23, 0.4);
+            --note-border: rgba(255, 255, 255, 0.06);
             --text-highlight: #ffffff;
             --h1-color: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
             --clock-text: #38bdf8;
-            --clock-border: rgba(56, 189, 248, 0.2);
+            --clock-border: rgba(56, 189, 248, 0.25);
+            --shadow-subtle: 0 10px 30px -5px rgba(0, 0, 0, 0.4);
+            --shadow-elevated: 0 20px 40px -10px rgba(0, 0, 0, 0.6);
         }
 
         :root.theme-light {
-            --bg-color: #f3f4f6;
+            --bg-color: #f8fafc;
+            --bg-mesh: radial-gradient(at 0% 0%, rgba(243, 128, 32, 0.07) 0px, transparent 50%),
+                       radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.06) 0px, transparent 50%),
+                       radial-gradient(at 50% 100%, rgba(6, 182, 212, 0.05) 0px, transparent 50%);
             --card-bg: rgba(255, 255, 255, 0.85);
-            --card-hover: rgba(249, 250, 251, 0.95);
+            --card-hover: rgba(255, 255, 255, 0.98);
+            --card-glass-border: rgba(0, 0, 0, 0.07);
+            --card-inset-shine: rgba(255, 255, 255, 0.8);
             --border-color: rgba(0, 0, 0, 0.08);
-            --text-primary: #111827;
-            --text-secondary: #4b5563;
-            --text-muted: #9ca3af;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
             --cf-orange: #f38020;
-            --cf-orange-glow: rgba(243, 128, 32, 0.12);
+            --cf-orange-hover: #e0731a;
+            --cf-orange-glow: rgba(243, 128, 32, 0.2);
+            --cf-gradient: linear-gradient(135deg, #f38020 0%, #ff9838 100%);
             --accent-cyan: #0891b2;
+            --accent-indigo: #4f46e5;
             --modal-bg: #ffffff;
-            --input-bg: rgba(0, 0, 0, 0.02);
+            --modal-overlay: rgba(15, 23, 42, 0.4);
+            --input-bg: rgba(241, 245, 249, 0.8);
             --btn-bg: rgba(0, 0, 0, 0.04);
             --btn-hover: rgba(0, 0, 0, 0.08);
-            --note-bg: rgba(0, 0, 0, 0.01);
-            --note-border: rgba(0, 0, 0, 0.03);
-            --scrollbar-thumb: rgba(0, 0, 0, 0.1);
-            --text-highlight: #111827;
-            --h1-color: linear-gradient(180deg, #111827 0%, #374151 100%);
+            --note-bg: rgba(248, 250, 252, 0.9);
+            --note-border: rgba(0, 0, 0, 0.06);
+            --text-highlight: #0f172a;
+            --h1-color: linear-gradient(180deg, #0f172a 0%, #334155 100%);
             --clock-text: #0284c7;
-            --clock-border: rgba(2, 132, 199, 0.25);
+            --clock-border: rgba(2, 132, 199, 0.2);
+            --shadow-subtle: 0 10px 25px -5px rgba(0, 0, 0, 0.06);
+            --shadow-elevated: 0 20px 35px -10px rgba(0, 0, 0, 0.12);
         }
 
         *, *::before, *::after {
@@ -467,130 +560,190 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             padding: 0;
         }
 
-        /* Strict Universal Typography Enforcement for all elements, inputs, buttons & badges */
         *, html, body, button, input, textarea, select, optgroup, code, kbd, samp, pre {
             font-family: var(--font-main) !important;
         }
 
         body {
-            background: var(--bg-color);
-            background-image: 
-                radial-gradient(at 0% 0%, rgba(243, 128, 32, 0.08) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.06) 0px, transparent 50%);
+            background-color: var(--bg-color);
+            background-image: var(--bg-mesh);
             background-attachment: fixed;
             color: var(--text-primary);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 1.5rem 1rem;
+            padding: 1.75rem 1.25rem;
             -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         .container {
-            max-width: 860px;
+            max-width: 960px;
             margin: 0 auto;
             width: 100%;
         }
 
-        /* Top Header */
+        /* Glassmorphism Navigation Bar */
         header {
+            background: var(--card-bg);
+            border: 1px solid var(--card-glass-border);
+            border-radius: 18px;
+            padding: 1rem 1.35rem;
             margin-bottom: 1.5rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
             gap: 1rem;
+            backdrop-filter: blur(16px) saturate(180%);
+            box-shadow: var(--shadow-subtle), inset 0 1px 0 var(--card-inset-shine);
+            transition: all 0.3s ease;
         }
 
         .brand {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 0.85rem;
         }
 
         .cf-logo {
-            width: 38px;
-            height: 38px;
-            background: linear-gradient(135deg, #f38020, #faad3f);
-            border-radius: 10px;
+            width: 42px;
+            height: 42px;
+            background: var(--cf-gradient);
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 12px var(--cf-orange-glow);
+            box-shadow: 0 6px 18px var(--cf-orange-glow);
+            position: relative;
+            flex-shrink: 0;
         }
 
-        .cf-logo svg { width: 22px; height: 22px; fill: #ffffff; }
+        .cf-logo::after {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 14px;
+            background: var(--cf-gradient);
+            z-index: -1;
+            opacity: 0.4;
+            filter: blur(6px);
+        }
+
+        .cf-logo svg { width: 24px; height: 24px; fill: #ffffff; }
 
         h1 {
-            font-size: 1.5rem;
+            font-size: 1.35rem;
             font-weight: 700;
             letter-spacing: -0.02em;
             background: var(--h1-color);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            line-height: 1.2;
+        }
+
+        .brand-subtitle {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            font-weight: 500;
         }
 
         .header-actions {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 0.6rem;
             flex-wrap: wrap;
         }
 
+        /* Buttons & Control Pills */
         .btn {
             background: var(--btn-bg);
             color: var(--text-primary);
             border: 1px solid var(--border-color);
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            font-size: 0.85rem;
+            padding: 0.5rem 0.9rem;
+            border-radius: 10px;
+            font-size: 0.82rem;
             font-weight: 500;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 0.4rem;
-            transition: all 0.2s ease;
+            gap: 0.45rem;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            backdrop-filter: blur(8px);
+            user-select: none;
         }
 
         .btn:hover {
             background: var(--btn-hover);
-            border-color: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.18);
+            transform: translateY(-1px);
         }
 
         :root.theme-light .btn:hover {
-            border-color: rgba(0, 0, 0, 0.15);
+            border-color: rgba(0, 0, 0, 0.16);
         }
 
-        /* Selector Group */
-        .selector-group {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
+        .btn:active {
+            transform: translateY(0);
         }
 
         .btn-primary {
-            background: var(--cf-orange);
+            background: var(--cf-gradient);
             color: #ffffff;
             border-color: transparent;
+            box-shadow: 0 4px 14px var(--cf-orange-glow);
+            font-weight: 600;
         }
 
         .btn-primary:hover {
-            background: #e0731a;
-            box-shadow: 0 4px 12px rgba(243, 128, 32, 0.3);
+            background: linear-gradient(135deg, #e0731a 0%, #f38020 100%);
+            box-shadow: 0 6px 20px var(--cf-orange-glow);
+            border-color: transparent;
+        }
+
+        .selector-group {
+            display: flex;
+            gap: 0.4rem;
+            align-items: center;
+            background: var(--btn-bg);
+            padding: 0.2rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .selector-group .btn {
+            border: none;
+            background: transparent;
+            padding: 0.4rem 0.7rem;
+            border-radius: 8px;
+        }
+
+        .selector-group .btn:hover {
+            background: var(--btn-hover);
+            transform: none;
         }
 
         .status-badge {
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            padding: 0.4rem 0.8rem;
+            padding: 0.45rem 0.85rem;
             background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.25);
             border-radius: 9999px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            color: #34d399;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #10b981;
+        }
+
+        .pulse-dot-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 8px;
+            height: 8px;
         }
 
         .pulse-dot {
@@ -598,25 +751,32 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             height: 8px;
             background-color: #10b981;
             border-radius: 50%;
-            box-shadow: 0 0 8px #10b981;
-            animation: pulse 2s infinite;
+            position: absolute;
         }
 
-        @keyframes pulse {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        .pulse-wave {
+            width: 8px;
+            height: 8px;
+            background-color: rgba(16, 185, 129, 0.6);
+            border-radius: 50%;
+            position: absolute;
+            animation: radarPulse 2s infinite cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* UTC Time Reset Bar Card */
+        @keyframes radarPulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(3); opacity: 0; }
+        }
+
+        /* Hero UTC Reset & Time Bar */
         .reset-card {
             background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 14px;
-            padding: 1.25rem;
+            border: 1px solid var(--card-glass-border);
+            border-radius: 18px;
+            padding: 1.35rem 1.5rem;
             margin-bottom: 1.5rem;
-            backdrop-filter: blur(12px);
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(16px) saturate(180%);
+            box-shadow: var(--shadow-subtle), inset 0 1px 0 var(--card-inset-shine);
             position: relative;
             overflow: hidden;
         }
@@ -625,49 +785,54 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             content: '';
             position: absolute;
             top: 0; left: 0; right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, #f38020, #06b6d4);
+            height: 3px;
+            background: linear-gradient(90deg, #f38020 0%, #ff9838 35%, #06b6d4 70%, #6366f1 100%);
         }
 
         .reset-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 0.75rem;
+            margin-bottom: 0.9rem;
             flex-wrap: wrap;
-            gap: 0.5rem;
+            gap: 0.75rem;
         }
 
         .reset-title {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.6rem;
             font-size: 0.95rem;
             font-weight: 600;
             color: var(--text-primary);
         }
 
-        .reset-title svg { width: 18px; height: 18px; color: var(--cf-orange); }
+        .reset-title i {
+            font-size: 1.25rem;
+            color: var(--cf-orange);
+        }
 
         .reset-meta {
             display: flex;
             align-items: center;
-            gap: 1rem;
-            font-size: 0.85rem;
-            color: var(--text-secondary);
+            gap: 0.6rem;
         }
 
         .clock-pill {
             background: var(--btn-bg);
-            padding: 0.25rem 0.6rem;
-            border-radius: 6px;
-            font-family: var(--font-main);
+            padding: 0.3rem 0.75rem;
+            border-radius: 8px;
             font-weight: 600;
+            font-size: 0.85rem;
             color: var(--clock-text);
             border: 1px solid var(--clock-border);
+            font-variant-numeric: tabular-nums;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
         }
 
-        /* Animated Progress Bars */
+        /* Animated Shimmer Progress Bar */
         .bar-bg {
             background: var(--input-bg);
             height: 12px;
@@ -675,6 +840,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             overflow: hidden;
             position: relative;
             box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
         }
 
         .bar-fill {
@@ -693,15 +859,16 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             background: linear-gradient(
                 90deg, 
                 rgba(255,255,255,0) 0%, 
-                rgba(255,255,255,0.25) 50%, 
+                rgba(255,255,255,0.3) 50%, 
                 rgba(255,255,255,0) 100%
             );
             background-size: 200px 100%;
-            animation: shimmer 2.5s infinite;
+            animation: shimmer 2.5s infinite linear;
         }
 
         .time-bar-fill {
-            background: linear-gradient(90deg, #f38020, #3b82f6);
+            background: linear-gradient(90deg, #f38020 0%, #06b6d4 100%);
+            box-shadow: 0 0 12px rgba(243, 128, 32, 0.4);
         }
 
         @keyframes fillBar {
@@ -716,226 +883,536 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         .reset-sub {
             display: flex;
             justify-content: space-between;
-            margin-top: 0.5rem;
+            margin-top: 0.65rem;
             font-size: 0.8rem;
-            color: var(--text-muted);
+            color: var(--text-secondary);
+            font-weight: 500;
         }
 
         /* Overview Metrics Grid */
         .metrics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 0.75rem;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.9rem;
             margin-bottom: 1.5rem;
         }
 
         .metric-card {
             background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 1rem;
-            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-glass-border);
+            border-radius: 16px;
+            padding: 1.15rem;
+            backdrop-filter: blur(16px) saturate(180%);
+            box-shadow: var(--shadow-subtle), inset 0 1px 0 var(--card-inset-shine);
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.25s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.15);
+            background: var(--card-hover);
+        }
+
+        .metric-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .metric-icon-wrap {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
         }
 
         .metric-label {
-            font-size: 0.78rem;
+            font-size: 0.76rem;
             color: var(--text-secondary);
-            margin-bottom: 0.35rem;
             text-transform: uppercase;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.05em;
+            font-weight: 600;
         }
 
         .metric-value {
-            font-size: 1.25rem;
+            font-size: 1.45rem;
             font-weight: 700;
             color: var(--text-highlight);
+            font-variant-numeric: tabular-nums;
+            line-height: 1.2;
+        }
+
+        /* Search & Filter Toolbar */
+        .toolbar-section {
+            background: var(--card-bg);
+            border: 1px solid var(--card-glass-border);
+            border-radius: 16px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            backdrop-filter: blur(16px);
+            box-shadow: var(--shadow-subtle), inset 0 1px 0 var(--card-inset-shine);
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 0.45rem 0.85rem;
+            flex-grow: 1;
+            max-width: 380px;
+            transition: all 0.2s ease;
+        }
+
+        .search-box:focus-within {
+            border-color: var(--cf-orange);
+            box-shadow: 0 0 0 3px rgba(243, 128, 32, 0.15);
+        }
+
+        .search-box i {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .search-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            width: 100%;
+        }
+
+        .search-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .filter-pills {
+            display: flex;
+            gap: 0.35rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-pill {
+            background: var(--btn-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.35rem 0.7rem;
+            border-radius: 8px;
+            font-size: 0.76rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .filter-pill:hover {
+            color: var(--text-primary);
+            background: var(--btn-hover);
+        }
+
+        .filter-pill.active {
+            background: var(--cf-orange);
+            color: #ffffff;
+            border-color: var(--cf-orange);
+            box-shadow: 0 2px 8px var(--cf-orange-glow);
+        }
+
+        .filter-count {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 0.1rem 0.4rem;
+            border-radius: 9999px;
+            font-size: 0.7rem;
+        }
+
+        .section-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
         }
 
         .section-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
+            font-size: 1.15rem;
+            font-weight: 700;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.55rem;
+            color: var(--text-highlight);
+            letter-spacing: -0.01em;
+        }
+
+        .section-title i {
+            color: var(--cf-orange);
         }
 
         /* Account Cards */
+        .account-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
         .card {
             background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 1.25rem;
-            margin-bottom: 1rem;
-            backdrop-filter: blur(12px);
-            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            border: 1px solid var(--card-glass-border);
+            border-radius: 18px;
+            padding: 1.35rem;
+            backdrop-filter: blur(16px) saturate(180%);
+            box-shadow: var(--shadow-subtle), inset 0 1px 0 var(--card-inset-shine);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
         }
 
         .card:hover {
-            border-color: var(--text-muted);
-            box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.2);
+            border-color: rgba(255, 255, 255, 0.16);
+            box-shadow: var(--shadow-elevated);
             background: var(--card-hover);
+            transform: translateY(-2px);
+        }
+
+        :root.theme-light .card:hover {
+            border-color: rgba(0, 0, 0, 0.14);
+        }
+
+        .card-accent-bar {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            opacity: 0.85;
         }
 
         .card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 0.85rem;
+            margin-bottom: 1rem;
             flex-wrap: wrap;
-            gap: 0.75rem;
+            gap: 0.85rem;
         }
 
         .account-title {
             display: flex;
             align-items: center;
-            gap: 0.6rem;
+            gap: 0.85rem;
         }
 
-        .account-icon {
-            width: 18px;
-            height: 18px;
-            color: var(--text-secondary);
+        .account-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(243, 128, 32, 0.15), rgba(99, 102, 241, 0.15));
+            border: 1px solid rgba(243, 128, 32, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--cf-orange);
             flex-shrink: 0;
         }
 
+        .account-info-text {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .account-name-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
         .account-name {
-            font-weight: 600;
-            font-size: 1rem;
+            font-weight: 700;
+            font-size: 1.05rem;
             color: var(--text-highlight);
-            word-break: break-word;
+            letter-spacing: -0.01em;
+        }
+
+        .account-index-badge {
+            font-size: 0.7rem;
+            background: var(--btn-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 0.1rem 0.4rem;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .account-submeta {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .account-email-pill {
+            font-size: 0.76rem;
+            color: var(--text-secondary);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: var(--input-bg);
+            padding: 0.15rem 0.5rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .account-id-chip {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
         }
 
         .usage-stats {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            font-family: var(--font-main);
+            gap: 1rem;
+        }
+
+        .usage-stats-detail {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.15rem;
+        }
+
+        [dir="rtl"] .usage-stats-detail {
+            align-items: flex-start;
+        }
+
+        .usage-label {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            font-weight: 600;
         }
 
         .usage-count {
-            font-size: 0.9rem;
-            font-weight: 600;
+            font-size: 0.92rem;
             color: var(--text-secondary);
-            font-family: inherit;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .usage-count strong {
+            color: var(--text-highlight);
+            font-weight: 700;
         }
 
         .pct-badge {
-            font-size: 0.78rem;
+            font-size: 0.85rem;
             font-weight: 700;
-            padding: 0.2rem 0.55rem;
-            border-radius: 6px;
-            letter-spacing: 0.02em;
+            padding: 0.35rem 0.7rem;
+            border-radius: 8px;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.01em;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 58px;
         }
 
-        .badge-normal { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
-        .badge-warning { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
-        .badge-danger  { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .badge-normal { 
+            background: rgba(6, 182, 212, 0.12); 
+            color: #06b6d4; 
+            border: 1px solid rgba(6, 182, 212, 0.28); 
+        }
+        .badge-warning { 
+            background: rgba(245, 158, 11, 0.12); 
+            color: #f59e0b; 
+            border: 1px solid rgba(245, 158, 11, 0.28); 
+        }
+        .badge-danger  { 
+            background: rgba(239, 68, 68, 0.12); 
+            color: #ef4444; 
+            border: 1px solid rgba(239, 68, 68, 0.28); 
+        }
 
         .error-badge {
             display: flex;
             align-items: center;
-            gap: 0.4rem;
-            color: #f87171;
+            gap: 0.5rem;
+            color: #ef4444;
             background: rgba(239, 68, 68, 0.1);
             border: 1px solid rgba(239, 68, 68, 0.25);
-            padding: 0.5rem 0.75rem;
-            border-radius: 8px;
-            font-size: 0.83rem;
-            margin-top: 0.75rem;
+            padding: 0.6rem 0.85rem;
+            border-radius: 10px;
+            font-size: 0.82rem;
+            margin-top: 0.85rem;
+            font-weight: 500;
         }
 
         /* Note & Links Section inside Card */
         .card-meta-section {
             margin-top: 1.25rem;
             border-top: 1px solid var(--border-color);
-            padding-top: 1rem;
+            padding-top: 1.1rem;
             display: flex;
             flex-direction: column;
-            gap: 0.75rem;
+            gap: 1rem;
         }
 
         .note-container {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.5rem;
             background: var(--note-bg);
-            padding: 0.6rem 0.8rem;
-            border-radius: 8px;
             border: 1px solid var(--note-border);
+            border-radius: 12px;
+            padding: 0.85rem 1rem;
             position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .note-container:hover {
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        :root.theme-light .note-container:hover {
+            border-color: rgba(0, 0, 0, 0.12);
+        }
+
+        .note-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.45rem;
+        }
+
+        .note-label {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
         }
 
         .note-icon {
             color: var(--cf-orange);
             font-size: 1rem;
-            margin-top: 0.1rem;
+        }
+
+        .note-edit-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.78rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.2rem 0.45rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .note-edit-btn:hover {
+            color: var(--cf-orange);
+            background: var(--btn-hover);
         }
 
         .note-content {
             font-size: 0.88rem;
             color: var(--text-primary);
-            line-height: 1.4;
-            flex-grow: 1;
+            line-height: 1.5;
             cursor: pointer;
-            min-height: 1.25rem;
+            min-height: 1.4rem;
             white-space: pre-wrap;
+        }
+
+        .note-empty-state {
+            color: var(--text-muted);
+            font-style: italic;
         }
 
         .note-edit-wrapper {
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
+            gap: 0.6rem;
+            margin-top: 0.4rem;
         }
 
         .note-input {
             width: 100%;
             background: var(--input-bg);
             border: 1px solid var(--cf-orange);
-            border-radius: 6px;
+            border-radius: 8px;
             color: var(--text-primary);
             font-family: inherit;
             font-size: 0.88rem;
-            padding: 0.4rem;
+            padding: 0.6rem 0.75rem;
             resize: vertical;
-            min-height: 3.5rem;
-        }
-
-        .note-input:focus {
+            min-height: 4rem;
             outline: none;
-            box-shadow: 0 0 8px rgba(243, 128, 32, 0.25);
+            box-shadow: 0 0 0 3px rgba(243, 128, 32, 0.15);
         }
 
         .note-actions {
             display: flex;
-            gap: 0.4rem;
+            gap: 0.5rem;
             justify-content: flex-end;
         }
 
         .btn-sm {
-            padding: 0.25rem 0.6rem;
+            padding: 0.35rem 0.75rem;
             font-size: 0.78rem;
-            border-radius: 6px;
+            border-radius: 8px;
         }
 
-        .note-edit-icon {
+        /* Links Section */
+        .links-section {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .links-section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.78rem;
+            font-weight: 600;
             color: var(--text-muted);
-            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .links-section-header i {
+            color: var(--accent-cyan);
             font-size: 0.95rem;
-            transition: color 0.2s ease;
         }
 
-        .note-container:hover .note-edit-icon {
-            color: var(--text-secondary);
-        }
-
-        /* Links Row: Grid of cards, wraps automatically */
         .links-row {
             display: flex;
             flex-direction: row;
             gap: 0.75rem;
             flex-wrap: wrap;
-            padding-bottom: 0.25rem;
         }
 
         .link-slot {
@@ -943,26 +1420,27 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: var(--input-bg);
+            background: var(--btn-bg);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
+            border-radius: 14px;
             padding: 0;
-            width: 100px;
+            width: 110px;
             height: 100px;
             flex-shrink: 0;
             position: relative;
-            transition: all 0.2s ease;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
             overflow: hidden;
         }
 
         .link-slot:hover {
-            border-color: var(--text-muted);
+            border-color: rgba(6, 182, 212, 0.4);
             background: var(--btn-hover);
-            transform: translateY(-2px);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.25);
         }
 
         .link-anchor {
-            color: var(--accent-cyan);
+            color: var(--text-primary);
             text-decoration: none;
             font-size: 0.78rem;
             font-weight: 600;
@@ -970,120 +1448,185 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 0.35rem;
+            gap: 0.45rem;
             width: 100%;
             height: 100%;
-            padding: 0.75rem;
+            padding: 0.65rem;
             box-sizing: border-box;
             text-align: center;
+            position: relative;
         }
 
-        .link-anchor i {
-            font-size: 1.75rem;
+        .link-icon-circle {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: rgba(6, 182, 212, 0.1);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+            color: var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.2s ease;
         }
 
-        .link-anchor span {
+        .link-slot:hover .link-icon-circle {
+            background: rgba(6, 182, 212, 0.2);
+            transform: scale(1.08);
+        }
+
+        .link-title-text {
             white-space: normal;
-            line-height: 1.2;
+            line-height: 1.25;
             word-break: break-word;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
+            font-size: 0.76rem;
+            color: var(--text-primary);
         }
 
-        .link-anchor:hover {
-            text-decoration: none;
+        .link-external-icon {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        [dir="rtl"] .link-external-icon {
+            right: auto;
+            left: 5px;
+            transform: scaleX(-1);
+        }
+
+        .link-slot:hover .link-external-icon {
+            opacity: 1;
         }
 
         .delete-link-btn {
             position: absolute;
-            top: 4px;
-            right: 4px;
+            top: 5px;
+            right: 5px;
             z-index: 2;
-            background: none;
-            border: none;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
             color: var(--text-muted);
             cursor: pointer;
-            padding: 0.1rem;
-            border-radius: 4px;
+            width: 20px;
+            height: 20px;
+            border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.85rem;
-            transition: color 0.2s ease, background 0.2s ease;
+            font-size: 0.75rem;
+            transition: all 0.2s ease;
+            opacity: 0.6;
         }
 
         [dir="rtl"] .delete-link-btn {
             right: auto;
-            left: 4px;
+            left: 5px;
         }
 
         .delete-link-btn:hover {
             color: #ef4444;
-            background: rgba(239, 68, 68, 0.1);
+            background: rgba(239, 68, 68, 0.15);
+            border-color: rgba(239, 68, 68, 0.3);
+            opacity: 1;
+            transform: scale(1.1);
         }
 
         .add-link-btn {
-            background: rgba(6, 182, 212, 0.05);
+            background: rgba(6, 182, 212, 0.04);
             border: 1px dashed rgba(6, 182, 212, 0.3);
-            border-radius: 12px;
+            border-radius: 14px;
             color: var(--accent-cyan);
-            padding: 0.75rem;
-            width: 100px;
+            padding: 0.65rem;
+            width: 110px;
             height: 100px;
             cursor: pointer;
             font-family: inherit;
-            font-size: 0.78rem;
+            font-size: 0.76rem;
             font-weight: 600;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 0.35rem;
-            transition: all 0.2s ease;
+            gap: 0.45rem;
+            transition: all 0.25s ease;
         }
 
-        .add-link-btn i {
-            font-size: 1.75rem;
+        .add-link-icon-wrap {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: rgba(6, 182, 212, 0.08);
+            border: 1px dashed rgba(6, 182, 212, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            transition: all 0.2s ease;
         }
 
         .add-link-btn:hover {
             background: rgba(6, 182, 212, 0.1);
             border-color: var(--accent-cyan);
-            transform: translateY(-2px);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px -4px rgba(6, 182, 212, 0.2);
+        }
+
+        .add-link-btn:hover .add-link-icon-wrap {
+            background: var(--accent-cyan);
+            color: #ffffff;
+            border-style: solid;
+            transform: scale(1.08);
         }
 
         /* Modals & Dialogs */
         .modal {
             display: none;
             position: fixed;
-            z-index: 100;
+            z-index: 1000;
             left: 0;
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(4px);
+            background-color: var(--modal-overlay);
+            backdrop-filter: blur(16px);
             align-items: center;
             justify-content: center;
-            padding: 1rem;
+            padding: 1.25rem;
         }
 
         .modal-content {
             background-color: var(--modal-bg);
             border: 1px solid var(--border-color);
-            border-radius: 16px;
+            border-radius: 20px;
             width: 100%;
-            max-width: 550px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-            animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            max-width: 540px;
+            box-shadow: var(--shadow-elevated);
+            animation: modalPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
             overflow: hidden;
+            position: relative;
         }
 
-        @keyframes modalFadeIn {
-            from { transform: scale(0.95); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
+        .modal-content::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: var(--cf-gradient);
+        }
+
+        @keyframes modalPopIn {
+            from { transform: scale(0.92) translateY(10px); opacity: 0; }
+            to { transform: scale(1) translateY(0); opacity: 1; }
         }
 
         .modal-header {
@@ -1096,37 +1639,55 @@ function renderDashboard(results, env, hasPasswordConfigured) {
 
         .modal-title {
             font-size: 1.1rem;
-            font-weight: 600;
+            font-weight: 700;
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            color: var(--text-highlight);
+        }
+
+        .modal-title i {
+            color: var(--cf-orange);
+            font-size: 1.25rem;
         }
 
         .close-modal-btn {
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            font-size: 1.25rem;
+            background: var(--btn-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 1.1rem;
             cursor: pointer;
-            transition: color 0.2s ease;
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
         }
 
         .close-modal-btn:hover {
             color: var(--text-highlight);
+            background: var(--btn-hover);
         }
 
         .modal-body {
             padding: 1.5rem;
-            max-height: 70vh;
+            max-height: 72vh;
             overflow-y: auto;
         }
 
         .modal-footer {
-            padding: 1.25rem 1.5rem;
+            padding: 1.1rem 1.5rem;
             border-top: 1px solid var(--border-color);
             display: flex;
             justify-content: flex-end;
-            gap: 0.75rem;
+            gap: 0.6rem;
+            background: rgba(0, 0, 0, 0.15);
+        }
+
+        :root.theme-light .modal-footer {
+            background: rgba(0, 0, 0, 0.02);
         }
 
         /* Form Controls */
@@ -1140,42 +1701,42 @@ function renderDashboard(results, env, hasPasswordConfigured) {
 
         .form-label {
             display: block;
-            font-size: 0.85rem;
-            font-weight: 500;
+            font-size: 0.82rem;
+            font-weight: 600;
             color: var(--text-secondary);
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.45rem;
         }
 
         .form-control {
             width: 100%;
             background: var(--input-bg);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
+            border-radius: 10px;
             color: var(--text-primary);
-            padding: 0.6rem 0.80rem;
+            padding: 0.65rem 0.9rem;
             font-family: inherit;
-            font-size: 0.9rem;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            font-size: 0.88rem;
+            transition: all 0.2s ease;
         }
 
         .form-control:focus {
             outline: none;
             border-color: var(--cf-orange);
-            box-shadow: 0 0 8px rgba(243, 128, 32, 0.2);
+            box-shadow: 0 0 0 3px rgba(243, 128, 32, 0.15);
         }
 
         .form-help-text {
-            font-size: 0.75rem;
+            font-size: 0.76rem;
             color: var(--text-muted);
-            margin-top: 0.35rem;
-            line-height: 1.4;
+            margin-top: 0.4rem;
+            line-height: 1.45;
         }
 
         .form-help-text a {
             color: var(--accent-cyan);
             text-decoration: none;
-            font-weight: 500;
-            transition: color 0.2s ease, text-decoration 0.2s ease;
+            font-weight: 600;
+            transition: color 0.2s ease;
         }
 
         .form-help-text a:hover {
@@ -1197,9 +1758,14 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             justify-content: space-between;
             background: var(--note-bg);
             border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            padding: 0.85rem 1rem;
             gap: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .manage-account-item:hover {
+            border-color: rgba(255, 255, 255, 0.15);
         }
 
         .manage-account-info {
@@ -1211,8 +1777,8 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         }
 
         .manage-account-name {
-            font-weight: 600;
-            font-size: 0.9rem;
+            font-weight: 700;
+            font-size: 0.92rem;
             color: var(--text-highlight);
             white-space: nowrap;
             overflow: hidden;
@@ -1220,7 +1786,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         }
 
         .manage-account-id {
-            font-size: 0.75rem;
+            font-size: 0.76rem;
             color: var(--text-muted);
             font-family: inherit;
             white-space: nowrap;
@@ -1238,24 +1804,27 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             background: var(--input-bg);
             border: 1px solid var(--border-color);
             color: var(--text-secondary);
-            width: 32px;
-            height: 32px;
-            border-radius: 6px;
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             transition: all 0.2s ease;
+            font-size: 1rem;
         }
 
         .icon-btn:hover {
             background: var(--btn-hover);
             color: var(--text-highlight);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
         }
 
         .icon-btn-danger:hover {
             background: rgba(239, 68, 68, 0.15);
-            border-color: rgba(239, 68, 68, 0.3);
+            border-color: rgba(239, 68, 68, 0.35);
             color: #f87171;
         }
 
@@ -1266,42 +1835,67 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         }
 
         .section-subtitle {
-            font-size: 0.9rem;
-            font-weight: 600;
+            font-size: 0.82rem;
+            font-weight: 700;
             color: var(--text-secondary);
-            margin-bottom: 0.75rem;
+            margin-bottom: 0.85rem;
             text-transform: uppercase;
-            letter-spacing: 0.03em;
+            letter-spacing: 0.05em;
         }
 
-        /* Empty Container */
+        /* Empty State */
         .empty-container {
-            max-width: 500px;
-            margin: 4rem auto;
+            max-width: 520px;
+            margin: 3.5rem auto;
             text-align: center;
             background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 2.5rem 1.5rem;
-            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-glass-border);
+            border-radius: 20px;
+            padding: 2.75rem 2rem;
+            backdrop-filter: blur(16px);
+            box-shadow: var(--shadow-subtle);
         }
-        .empty-container h2 { font-size: 1.4rem; margin-bottom: 0.75rem; color: var(--cf-orange); }
-        .empty-container p { color: var(--text-secondary); font-size: 0.95rem; line-height: 1.5; }
+
+        .empty-icon-wrap {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            background: rgba(243, 128, 32, 0.1);
+            border: 1px solid rgba(243, 128, 32, 0.25);
+            color: var(--cf-orange);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin: 0 auto 1.25rem auto;
+        }
+
+        .empty-container h2 { 
+            font-size: 1.35rem; 
+            margin-bottom: 0.6rem; 
+            color: var(--text-highlight); 
+            font-weight: 700;
+        }
+        .empty-container p { 
+            color: var(--text-secondary); 
+            font-size: 0.9rem; 
+            line-height: 1.6; 
+        }
 
         /* Footer */
         footer {
-            margin-top: 3rem;
+            margin-top: 3.5rem;
             padding: 2rem 0 1rem 0;
             border-top: 1px solid var(--border-color);
             text-align: center;
             color: var(--text-secondary);
-            font-size: 0.85rem;
+            font-size: 0.82rem;
         }
 
         .footer-container {
             display: flex;
             flex-direction: column;
-            gap: 0.6rem;
+            gap: 0.65rem;
             align-items: center;
         }
 
@@ -1316,46 +1910,66 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         .dev-link {
             color: var(--cf-orange);
             text-decoration: none;
-            font-weight: 500;
-            transition: color 0.2s ease;
+            font-weight: 600;
+            transition: all 0.2s ease;
         }
 
         .dev-link:hover {
-            color: #faad3f;
+            color: #ff9838;
             text-decoration: underline;
         }
 
-        .heart { color: #ef4444; }
+        .heart { color: #ef4444; display: inline-block; animation: heartBeat 1.5s infinite; }
+
+        @keyframes heartBeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
 
         .footer-badge {
-            font-size: 0.75rem;
+            font-size: 0.74rem;
             color: var(--text-muted);
             background: var(--input-bg);
-            padding: 0.25rem 0.6rem;
+            padding: 0.3rem 0.75rem;
             border-radius: 9999px;
             border: 1px solid var(--border-color);
             margin-top: 0.25rem;
         }
 
         /* Responsive Breakpoints */
+        @media (max-width: 768px) {
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .search-box {
+                max-width: 100%;
+            }
+            .toolbar-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .filter-pills {
+                justify-content: flex-start;
+            }
+        }
+
         @media (max-width: 640px) {
             body { padding: 1rem 0.75rem; }
-            h1 { font-size: 1.25rem; }
-            .card-header { flex-direction: column; align-items: flex-start; gap: 0.4rem; }
-            .usage-stats { width: 100%; justify-content: space-between; margin-top: 0.25rem; }
+            h1 { font-size: 1.2rem; }
+            .card-header { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+            .usage-stats { width: 100%; justify-content: space-between; }
+            .usage-stats-detail { align-items: flex-start; }
+            [dir="rtl"] .usage-stats-detail { align-items: flex-end; }
             .reset-header { flex-direction: column; align-items: flex-start; }
             .reset-meta { width: 100%; justify-content: space-between; margin-top: 0.25rem; }
-            .metrics-grid { grid-template-columns: repeat(2, 1fr); }
-
-            /* Wrap link slots on Mobile cleanly */
-            .links-row {
-                flex-wrap: wrap;
-            }
+            .metrics-grid { grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
+            .link-slot, .add-link-btn { width: calc(50% - 0.375rem); }
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Floating Navigation Header -->
         <header>
             <div class="brand">
                 <div class="cf-logo">
@@ -1365,7 +1979,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 </div>
                 <div>
                     <h1 data-i18n="brand-title">Cloudflare Workers Usage</h1>
-                    <span style="font-size: 0.8rem; color: var(--text-secondary);" data-i18n="brand-subtitle">Daily Invocation Tracker</span>
+                    <div class="brand-subtitle" data-i18n="brand-subtitle">Daily Invocation Tracker</div>
                 </div>
             </div>
             <div class="header-actions">
@@ -1387,8 +2001,11 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                     <i class="ti ti-settings"></i>
                     <span data-i18n="manage-accounts">Manage Accounts</span>
                 </button>
-                <div class="status-badge">
-                    <span class="pulse-dot"></span>
+                <div class="status-badge" title="Live edge caching active">
+                    <div class="pulse-dot-wrap">
+                        <div class="pulse-wave"></div>
+                        <div class="pulse-dot"></div>
+                    </div>
                     <span data-i18n="live-edge-data">Live Edge Data</span>
                 </div>
             </div>
@@ -1398,14 +2015,14 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         <div class="reset-card">
             <div class="reset-header">
                 <div class="reset-title">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10" />
-                        <polyline points="12 6 12 12 16 14" />
-                    </svg>
+                    <i class="ti ti-clock-hour-4"></i>
                     <span data-i18n="quota-title">Cloudflare Quota Day Progress (UTC Reset)</span>
                 </div>
                 <div class="reset-meta">
-                    <span id="utc-clock" class="clock-pill">${timeFormatted}</span>
+                    <span id="utc-clock" class="clock-pill">
+                        <i class="ti ti-clock"></i>
+                        ${timeFormatted}
+                    </span>
                     <span id="utc-pct-badge" class="pct-badge badge-normal" style="background: rgba(243, 128, 32, 0.15); color: #f38020; border-color: rgba(243, 128, 32, 0.3);">${dayProgressPct}%</span>
                 </div>
             </div>
@@ -1421,43 +2038,94 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         <!-- Metrics Overview Grid -->
         <div class="metrics-grid">
             <div class="metric-card">
-                <div class="metric-label" data-i18n="metric-monitored">Monitored Accounts</div>
+                <div class="metric-top-row">
+                    <div class="metric-label" data-i18n="metric-monitored">Monitored Accounts</div>
+                    <div class="metric-icon-wrap" style="background: rgba(99, 102, 241, 0.12); color: #6366f1;">
+                        <i class="ti ti-users"></i>
+                    </div>
+                </div>
                 <div class="metric-value" data-raw-val="${results.length}">${results.length}</div>
             </div>
             <div class="metric-card">
-                <div class="metric-label" data-i18n="metric-requests">Total Requests Today</div>
+                <div class="metric-top-row">
+                    <div class="metric-label" data-i18n="metric-requests">Total Requests Today</div>
+                    <div class="metric-icon-wrap" style="background: rgba(6, 182, 212, 0.12); color: #06b6d4;">
+                        <i class="ti ti-activity"></i>
+                    </div>
+                </div>
                 <div class="metric-value" data-raw-val="${formattedTotalReqs}">${formattedTotalReqs}</div>
             </div>
             <div class="metric-card">
-                <div class="metric-label" data-i18n="metric-free">Total Free Quota</div>
+                <div class="metric-top-row">
+                    <div class="metric-label" data-i18n="metric-free">Total Free Quota</div>
+                    <div class="metric-icon-wrap" style="background: rgba(16, 185, 129, 0.12); color: #10b981;">
+                        <i class="ti ti-shield-check"></i>
+                    </div>
+                </div>
                 <div class="metric-value" data-raw-val="${formattedTotalLimit}">${formattedTotalLimit}</div>
             </div>
             <div class="metric-card">
-                <div class="metric-label" data-i18n="metric-usage">Overall Usage</div>
-                <div class="metric-value" data-raw-val="${overallPct}%" style="color: ${overallPct > 75 ? '#f97316' : '#38bdf8'}">${overallPct}%</div>
+                <div class="metric-top-row">
+                    <div class="metric-label" data-i18n="metric-usage">Overall Usage</div>
+                    <div class="metric-icon-wrap" style="background: rgba(243, 128, 32, 0.12); color: #f38020;">
+                        <i class="ti ti-chart-donut"></i>
+                    </div>
+                </div>
+                <div class="metric-value" data-raw-val="${overallPct}%" style="color: ${overallPct > 75 ? '#f97316' : 'var(--text-highlight)'}">${overallPct}%</div>
             </div>
         </div>
 
-        <div class="section-title">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="7" height="7" rx="1" />
-                <rect x="14" y="3" width="7" height="7" rx="1" />
-                <rect x="14" y="14" width="7" height="7" rx="1" />
-                <rect x="3" y="14" width="7" height="7" rx="1" />
-            </svg>
-            <span data-i18n="breakdown-title">Account Usage Breakdown</span>
+        <!-- Search & Filter Controls -->
+        <div class="toolbar-section">
+            <div class="search-box">
+                <i class="ti ti-search"></i>
+                <input type="text" id="account-search-input" class="search-input" placeholder="Search accounts by name, email or ID..." oninput="handleAccountSearch(this.value)" />
+            </div>
+            <div class="filter-pills">
+                <button class="filter-pill active" data-filter="all" onclick="setAccountFilter('all')">
+                    <span data-i18n="filter-all">All</span>
+                    <span class="filter-count" id="count-all">${results.length}</span>
+                </button>
+                <button class="filter-pill" data-filter="normal" onclick="setAccountFilter('normal')">
+                    <span data-i18n="filter-normal">Normal</span>
+                    <span class="filter-count" id="count-normal">${normalCount}</span>
+                </button>
+                <button class="filter-pill" data-filter="warning" onclick="setAccountFilter('warning')">
+                    <span data-i18n="filter-warning">Warning</span>
+                    <span class="filter-count" id="count-warning">${warningCount}</span>
+                </button>
+                <button class="filter-pill" data-filter="critical" onclick="setAccountFilter('critical')">
+                    <span data-i18n="filter-critical">Critical</span>
+                    <span class="filter-count" id="count-critical">${criticalCount}</span>
+                </button>
+                ${errorCount > 0 ? `
+                <button class="filter-pill" data-filter="error" onclick="setAccountFilter('error')">
+                    <span data-i18n="filter-error">Error</span>
+                    <span class="filter-count" id="count-error">${errorCount}</span>
+                </button>` : ''}
+            </div>
+        </div>
+
+        <div class="section-header-row">
+            <div class="section-title">
+                <i class="ti ti-layout-grid"></i>
+                <span data-i18n="breakdown-title">Account Usage Breakdown</span>
+            </div>
         </div>
 
         ${emptyStateHtml}
 
-        <div class="account-list">
+        <div class="account-list" id="account-cards-container">
             ${cardsHtml}
+        </div>
+        <div id="no-search-results" style="display: none; text-align: center; padding: 3rem 1rem; color: var(--text-secondary);" data-i18n="no-search-results">
+            No matching accounts found.
         </div>
     </div>
 
     <!-- Setup Password Modal (Startup) -->
     <div class="modal" id="setup-password-modal">
-        <div class="modal-content" style="max-width: 420px;">
+        <div class="modal-content" style="max-width: 440px;">
             <div class="modal-header">
                 <div class="modal-title">
                     <i class="ti ti-shield-lock"></i>
@@ -1465,7 +2133,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 </div>
             </div>
             <div class="modal-body">
-                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;" data-i18n="modal-setup-desc">
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.5;" data-i18n="modal-setup-desc">
                     Welcome! Set an administrator password to secure your dashboard settings and Cloudflare accounts.
                 </p>
                 <div class="form-group">
@@ -1479,23 +2147,25 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 <div style="color: #f87171; font-size: 0.8rem; margin-top: 0.5rem; display: none;" id="setup-password-error"></div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-primary" style="width: 100%;" onclick="submitSetupPassword()" data-i18n="btn-create-password">Create Password</button>
+                <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="submitSetupPassword()" data-i18n="btn-create-password">Create Password</button>
             </div>
         </div>
     </div>
 
     <!-- Password Modal -->
     <div class="modal" id="password-modal">
-        <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-content" style="max-width: 420px;">
             <div class="modal-header">
                 <div class="modal-title">
                     <i class="ti ti-lock"></i>
                     <span data-i18n="modal-password-title">Enter Admin Password</span>
                 </div>
-                <button class="close-modal-btn" onclick="closeModal('password-modal')">×</button>
+                <button class="close-modal-btn" onclick="closeModal('password-modal')">
+                    <i class="ti ti-x"></i>
+                </button>
             </div>
             <div class="modal-body">
-                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;" data-i18n="modal-password-desc">
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.5;" data-i18n="modal-password-desc">
                     Enter your administrator password to unlock settings and manage accounts.
                 </p>
                 <div class="form-group">
@@ -1515,13 +2185,15 @@ function renderDashboard(results, env, hasPasswordConfigured) {
 
     <!-- Add Link Modal -->
     <div class="modal" id="add-link-modal">
-        <div class="modal-content" style="max-width: 420px;">
+        <div class="modal-content" style="max-width: 440px;">
             <div class="modal-header">
                 <div class="modal-title">
                     <i class="ti ti-plus"></i>
                     <span data-i18n="modal-add-link-title">Add Custom Link</span>
                 </div>
-                <button class="close-modal-btn" onclick="closeModal('add-link-modal')">×</button>
+                <button class="close-modal-btn" onclick="closeModal('add-link-modal')">
+                    <i class="ti ti-x"></i>
+                </button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="add-link-account-id" />
@@ -1536,7 +2208,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 <div class="form-group">
                     <label class="form-label" for="link-icon-input" data-i18n="link-icon-label">Tabler Icon Name</label>
                     <input type="text" class="form-control" id="link-icon-input" placeholder="e.g. server, link, cloud, brand-github" />
-                    <span style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; display: block;" data-i18n="link-icon-desc">
+                    <span style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem; display: block;" data-i18n="link-icon-desc">
                         Supported icons list: <a href="https://tabler.io/icons" target="_blank" rel="noopener" style="color: var(--cf-orange);">tabler.io/icons</a>
                     </span>
                 </div>
@@ -1549,22 +2221,22 @@ function renderDashboard(results, env, hasPasswordConfigured) {
     </div>
 
     <!-- Import .env Modal -->
-    <div class="modal" id="import-env-modal" style="z-index: 110;">
-        <div class="modal-content" style="max-width: 480px;">
+    <div class="modal" id="import-env-modal" style="z-index: 1100;">
+        <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header">
                 <div class="modal-title">
                     <i class="ti ti-file-upload"></i>
                     <span data-i18n="title-import-env">Import .env File</span>
                 </div>
-                <button class="close-modal-btn" onclick="closeModal('import-env-modal')">×</button>
+                <button class="close-modal-btn" onclick="closeModal('import-env-modal')">
+                    <i class="ti ti-x"></i>
+                </button>
             </div>
             <div class="modal-body">
-                <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.45; white-space: pre-wrap;" data-i18n="desc-import-env">
-                    Choose a .env file or paste the content below. Format example:
-                    CF_ACCOUNT_ID_1=bc5...
-                    CF_API_TOKEN_1=cfut_...
-                    CF_ACCOUNT_NAME_1=main
-                </p>
+                <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.5; white-space: pre-wrap;" data-i18n="desc-import-env">Choose a .env file or paste the content below. Format example:
+CF_ACCOUNT_ID_1=bc5...
+CF_API_TOKEN_1=cfut_...
+CF_ACCOUNT_NAME_1=main</p>
                 <div class="form-group">
                     <label class="form-label" for="env-file-input" data-i18n="label-select-file">Select File</label>
                     <input type="file" class="form-control" id="env-file-input" accept=".env,text/plain" onchange="handleEnvFileSelect(event)" />
@@ -1589,10 +2261,12 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                     <i class="ti ti-settings"></i>
                     <span data-i18n="modal-manage-title">Manage Cloudflare Accounts</span>
                 </div>
-                <button class="close-modal-btn" onclick="closeModal('manage-accounts-modal')">×</button>
+                <button class="close-modal-btn" onclick="closeModal('manage-accounts-modal')">
+                    <i class="ti ti-x"></i>
+                </button>
             </div>
             <div class="modal-body">
-                <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; justify-content: flex-end;">
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem; justify-content: flex-end;">
                     <button class="btn btn-sm" onclick="openImportEnvModal()" title="Import .env" style="background: rgba(6, 182, 212, 0.1); border-color: rgba(6, 182, 212, 0.25); color: var(--accent-cyan);">
                         <i class="ti ti-file-upload"></i>
                         <span data-i18n="btn-import-env">Import .env</span>
@@ -1630,7 +2304,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                         Recommended: <a href="https://dash.cloudflare.com/profile/api-tokens?accountId=%2A&name=cf-usage&permissionGroupKeys=%5B%7B%22key%22%3A%22account_analytics%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22user_details%22%2C%22type%22%3A%22read%22%7D%5D&zoneId=all" target="_blank" rel="noopener">Quick One-Click Token Setup</a> or <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" rel="noopener">Manual Setup</a>.
                     </div>
                 </div>
-                <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.25rem;">
                     <button class="btn" id="cancel-account-edit-btn" onclick="resetAccountForm()" data-i18n="btn-cancel-edit" style="display: none;">Cancel Edit</button>
                     <button class="btn btn-primary" onclick="saveAccountItem()" data-i18n="btn-save-account">Save Account</button>
                 </div>
@@ -1641,7 +2315,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         </div>
     </div>
 
-    <!-- Footer with Developer & Copyright Placeholders -->
+    <!-- Footer -->
     <footer>
         <div class="footer-container">
             <div class="footer-copyright">
@@ -1679,7 +2353,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 "unlock-settings": "Unlock Settings",
                 "unlocked": "Unlocked (Lock)",
                 "relock-settings": "Lock Settings",
-                "btn-save-note": "Save",
+                "btn-save-note": "Save Note",
                 "manage-accounts": "Manage Accounts",
                 "live-edge-data": "Live Edge Data",
                 "quota-title": "Cloudflare Quota Day Progress (UTC Reset)",
@@ -1688,8 +2362,20 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 "metric-free": "Total Free Quota",
                 "metric-usage": "Overall Usage",
                 "breakdown-title": "Account Usage Breakdown",
+                "usage-invocations": "Invocations Today",
+                "note-label": "Account Notes",
+                "edit-note": "Edit",
+                "quick-links": "Quick Links",
+                "filter-all": "All",
+                "filter-normal": "Normal",
+                "filter-warning": "Warning",
+                "filter-critical": "Critical",
+                "filter-error": "Error",
+                "no-search-results": "No matching accounts found.",
+                "empty-title": "No Accounts Configured",
+                "empty-desc": "No Cloudflare accounts are currently monitored. Click Manage Accounts in the top header to connect your accounts.",
                 "no-notes": "No notes added yet.",
-                "no-notes-input-placeholder": "Add any notes here (e.g. environment, tier, custom notes)...",
+                "no-notes-input-placeholder": "Add notes here (e.g. staging, workers list, tier)...",
                 "modal-password-title": "Enter Admin Password",
                 "modal-password-desc": "Enter your administrator password to unlock settings and manage accounts.",
                 "password-label": "Password",
@@ -1754,7 +2440,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 "unlock-settings": "باز کردن قفل تنظیمات",
                 "unlocked": "قفل باز شد (قفل مجدد)",
                 "relock-settings": "قفل کردن تنظیمات",
-                "btn-save-note": "ذخیره",
+                "btn-save-note": "ذخیره یادداشت",
                 "manage-accounts": "مدیریت اکانت‌ها",
                 "live-edge-data": "دیتا زنده شبکه",
                 "quota-title": "میزان پیشرفت روزانه سهمیه کلودفلر (ریست UTC)",
@@ -1763,6 +2449,18 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 "metric-free": "مجموع سهمیه رایگان",
                 "metric-usage": "میزان کل مصرف",
                 "breakdown-title": "جزئیات مصرف اکانت‌ها",
+                "usage-invocations": "درخواست‌های امروز",
+                "note-label": "یادداشت‌های اکانت",
+                "edit-note": "ویرایش",
+                "quick-links": "لینک‌های دسترسی سریع",
+                "filter-all": "همه",
+                "filter-normal": "عادی",
+                "filter-warning": "هشدار",
+                "filter-critical": "بحرانی",
+                "filter-error": "خطا",
+                "no-search-results": "هیچ اکانتی یافت نشد.",
+                "empty-title": "هیچ اکانتی تعریف نشده است",
+                "empty-desc": "در حال حاضر هیچ اکانت کلودفلری پایش نمی‌شود. برای افزودن اکانت بر روی مدیریت اکانت‌ها در بالای صفحه کلیک کنید.",
                 "no-notes": "هنوز یادداشتی اضافه نشده است.",
                 "no-notes-input-placeholder": "یادداشتی اضافه کنید (مثلاً محیط برنامه‌نویسی، محدودیت‌ها یا یادداشت‌های دیگر)...",
                 "modal-password-title": "وارد کردن رمز عبور مدیریت",
@@ -1892,7 +2590,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             document.querySelectorAll('.usage-count[data-raw-reqs]').forEach(el => {
                 const reqs = formatDigits(el.getAttribute('data-raw-reqs'), lang);
                 const limit = formatDigits(el.getAttribute('data-raw-limit'), lang);
-                el.textContent = reqs + ' / ' + limit;
+                el.innerHTML = '<strong>' + reqs + '</strong> / ' + limit;
             });
 
             // Format numbers in percentage badges
@@ -2017,6 +2715,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         function updatePasswordUI() {
             const lockBtn = document.getElementById('lock-btn');
             const lockText = document.getElementById('lock-text');
+            if (!lockBtn || !lockText) return;
             if (!isPasswordConfigured) {
                 lockBtn.style.background = 'rgba(243, 128, 32, 0.15)';
                 lockBtn.style.borderColor = 'rgba(243, 128, 32, 0.3)';
@@ -2026,11 +2725,11 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             } else if (cachedPassword) {
                 lockBtn.style.background = 'rgba(16, 185, 129, 0.15)';
                 lockBtn.style.borderColor = 'rgba(16, 185, 129, 0.3)';
-                lockBtn.style.color = '#34d399';
+                lockBtn.style.color = '#10b981';
                 lockText.textContent = translations[currentLang]["unlocked"];
                 lockBtn.querySelector('i').className = 'ti ti-lock-open';
             } else {
-                lockBtn.style.background = 'rgba(255, 255, 255, 0.05)';
+                lockBtn.style.background = 'var(--btn-bg)';
                 lockBtn.style.borderColor = 'var(--border-color)';
                 lockBtn.style.color = 'var(--text-primary)';
                 lockText.textContent = translations[currentLang]["unlock-settings"];
@@ -2072,7 +2771,9 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             const mPad = String(m).padStart(2, '0');
             const sPad = String(s).padStart(2, '0');
 
-            if (clockEl) clockEl.textContent = formatDigits(hPad + ':' + mPad + ':' + sPad + ' UTC', currentLang);
+            if (clockEl) {
+                clockEl.innerHTML = '<i class="ti ti-clock"></i> ' + formatDigits(hPad + ':' + mPad + ':' + sPad + ' UTC', currentLang);
+            }
 
             const isFarsi = currentLang === 'fa';
             if (elapsedEl) {
@@ -2092,6 +2793,47 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         }
 
         setInterval(updateUtcResetBar, 1000);
+
+        // Search and Filter logic
+        let activeFilter = 'all';
+        let currentSearchQuery = '';
+
+        function setAccountFilter(category) {
+            activeFilter = category;
+            document.querySelectorAll('.filter-pill').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-filter') === category);
+            });
+            filterAccountCards();
+        }
+
+        function handleAccountSearch(query) {
+            currentSearchQuery = (query || '').toLowerCase().trim();
+            filterAccountCards();
+        }
+
+        function filterAccountCards() {
+            const cards = document.querySelectorAll('#account-cards-container .card');
+            let visibleCount = 0;
+            cards.forEach(card => {
+                const category = card.getAttribute('data-category');
+                const searchData = card.getAttribute('data-search') || '';
+                
+                const matchesFilter = (activeFilter === 'all' || category === activeFilter);
+                const matchesSearch = !currentSearchQuery || searchData.includes(currentSearchQuery);
+
+                if (matchesFilter && matchesSearch) {
+                    card.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            const noResultsEl = document.getElementById('no-search-results');
+            if (noResultsEl) {
+                noResultsEl.style.display = (visibleCount === 0 && cards.length > 0) ? 'block' : 'none';
+            }
+        }
 
         // Modals management
         function openModal(id) {
@@ -2209,7 +2951,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             let meta = fullMetaMap.get(accountId) || { note: "", links: [] };
             if (inputEl) inputEl.value = meta.note || "";
             if (displayEl) displayEl.style.display = 'block';
-            if (editIcon) editIcon.style.display = 'block';
+            if (editIcon) editIcon.style.display = 'inline-flex';
             if (wrapperEl) wrapperEl.style.display = 'none';
         }
 
@@ -2218,13 +2960,14 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             const wrapperEl = document.getElementById('note-edit-wrapper-' + accountId);
             const editIcon = document.getElementById('note-edit-icon-' + accountId);
             const inputEl = document.getElementById('note-input-' + accountId);
-            const noteText = inputEl ? inputEl.value : "";
+            const noteText = inputEl ? inputEl.value.trim() : "";
 
             if (displayEl) {
                 displayEl.textContent = noteText || translations[currentLang]["no-notes"];
+                displayEl.classList.toggle('note-empty-state', !noteText);
                 displayEl.style.display = 'block';
             }
-            if (editIcon) editIcon.style.display = 'block';
+            if (editIcon) editIcon.style.display = 'inline-flex';
             if (wrapperEl) wrapperEl.style.display = 'none';
 
             let meta = fullMetaMap.get(accountId) || { note: "", links: [] };
@@ -2279,8 +3022,11 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                             <i class="ti ti-x"></i>
                         </button>
                         <a href="\${href}" target="_blank" rel="noopener" class="link-anchor">
-                            <i class="ti ti-\${link.icon || 'link'}"></i>
-                            <span>\${link.title}</span>
+                            <div class="link-icon-circle">
+                                <i class="ti ti-\${link.icon || 'link'}"></i>
+                            </div>
+                            <span class="link-title-text">\${link.title}</span>
+                            <i class="ti ti-arrow-up-right link-external-icon"></i>
                         </a>
                     </div>
                 \`;
@@ -2289,8 +3035,10 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             if ((meta.links || []).length < 5) {
                 linksHtml += \`
                     <button class="add-link-btn" onclick="openAddLinkModal('\${accountId}')" title="Add Link Slot">
-                        <i class="ti ti-plus"></i>
-                        <span>Add Link</span>
+                        <div class="add-link-icon-wrap">
+                            <i class="ti ti-plus"></i>
+                        </div>
+                        <span data-i18n="btn-add-link">Add Link</span>
                     </button>
                 \`;
             }
@@ -2432,7 +3180,6 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             const targetIdx = idx + direction;
             if (targetIdx < 0 || targetIdx >= accountsData.length) return;
 
-            // Swap accounts
             const temp = accountsData[idx];
             accountsData[idx] = accountsData[targetIdx];
             accountsData[targetIdx] = temp;
@@ -2463,7 +3210,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             document.getElementById('edit-account-index').value = index;
             document.getElementById('account-name-input').value = acc.name;
             document.getElementById('account-id-input').value = acc.account_id;
-            document.getElementById('account-token-input').value = ''; // Don't pre-populate token for security, leave blank to keep unchanged
+            document.getElementById('account-token-input').value = '';
             document.getElementById('account-token-input').placeholder = "•••••••• (Leave blank to keep unchanged)";
             document.getElementById('add-edit-account-title').textContent = (currentLang === 'fa' ? "ویرایش اکانت: " : "Edit Account: ") + acc.name;
             document.getElementById('cancel-account-edit-btn').style.display = 'inline-flex';
@@ -2579,7 +3326,6 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 return;
             }
 
-            // Parse .env logic
             const lines = envText.split(/\\r?\\n/);
             const rawVars = {};
             lines.forEach(line => {
@@ -2589,16 +3335,13 @@ function renderDashboard(results, env, hasPasswordConfigured) {
                 if (eqIdx === -1) return;
                 const key = cleanLine.substring(0, eqIdx).trim();
                 let value = cleanLine.substring(eqIdx + 1).trim();
-                // strip quotes if present
                 if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
                     value = value.substring(1, value.length - 1);
                 }
                 rawVars[key] = value;
             });
 
-            // Extract accounts from parsed variables
             const importedAccounts = [];
-            // Support indexes up to 50
             for (let i = 1; i <= 50; i++) {
                 let accountId = rawVars['CF_ACCOUNT_ID_' + i] || rawVars['CF_ACCOUNT_' + i + '_ID'] || "";
                 let apiToken = rawVars['CF_API_TOKEN_' + i] || "";
