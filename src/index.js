@@ -360,12 +360,10 @@ function renderDashboard(results, env, hasPasswordConfigured) {
       `;
     });
 
-    if ((meta.links || []).length < 5) {
+    if ((meta.links || []).length < 4) {
       linksHtml += `
         <button class="add-link-btn" onclick="openAddLinkModal('${res.account_id}')" title="Add Link Slot">
-          <div class="add-link-icon-wrap">
-            <i class="ti ti-plus"></i>
-          </div>
+          <i class="ti ti-plus"></i>
           <span data-i18n="btn-add-link">Add Link</span>
         </button>
       `;
@@ -406,7 +404,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         </div>
         ${errBadge}
 
-        <!-- Note & Links Section -->
+        <!-- Compact Note & Links Combined Section -->
         <div class="card-meta-section">
           <div class="note-container" id="note-container-${res.account_id}">
             <div class="note-header-row">
@@ -421,7 +419,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             </div>
             <div class="note-content ${!noteText ? 'note-empty-state' : ''}" onclick="enableNoteEdit('${res.account_id}')" id="note-display-${res.account_id}">${noteText || "No notes added yet."}</div>
             <div class="note-edit-wrapper" id="note-edit-wrapper-${res.account_id}" style="display: none; width: 100%;">
-              <textarea class="note-input" id="note-input-${res.account_id}" placeholder="Add notes here (e.g. staging, workers list, tier)...">${meta.note || ""}</textarea>
+              <textarea class="note-input" id="note-input-${res.account_id}" rows="2" placeholder="Add notes here...">${meta.note || ""}</textarea>
               <div class="note-actions">
                 <button class="btn btn-sm note-cancel-btn" onclick="cancelNoteEdit('${res.account_id}')">
                   <i class="ti ti-x"></i>
@@ -436,10 +434,6 @@ function renderDashboard(results, env, hasPasswordConfigured) {
           </div>
 
           <div class="links-section">
-            <div class="links-section-header">
-              <i class="ti ti-link"></i>
-              <span data-i18n="quick-links">Quick Links</span>
-            </div>
             <div class="links-row">
               ${linksHtml}
             </div>
@@ -588,14 +582,14 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         header {
             background: var(--card-bg);
             border: 1px solid var(--card-glass-border);
-            border-radius: 18px;
-            padding: 1rem 1.35rem;
-            margin-bottom: 1.5rem;
+            border-radius: 14px;
+            padding: 0.75rem 1.15rem;
+            margin-bottom: 0.85rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 1rem;
+            gap: 0.75rem;
             backdrop-filter: blur(16px) saturate(180%);
             box-shadow: var(--shadow-subtle), inset 0 1px 0 var(--card-inset-shine);
             transition: all 0.3s ease;
@@ -604,38 +598,41 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         .brand {
             display: flex;
             align-items: center;
-            gap: 0.85rem;
+            gap: 0.75rem;
         }
 
         .cf-logo {
-            width: 42px;
-            height: 42px;
-            background: var(--cf-gradient);
-            border-radius: 12px;
+            width: 38px;
+            height: 38px;
+            border-radius: 11px;
+            background: linear-gradient(135deg, rgba(243, 128, 32, 0.2), rgba(243, 128, 32, 0.08));
+            border: 1px solid rgba(243, 128, 32, 0.35);
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 6px 18px var(--cf-orange-glow);
             position: relative;
             flex-shrink: 0;
+            transition: all 0.25s ease;
         }
 
-        .cf-logo::after {
-            content: '';
-            position: absolute;
-            inset: -2px;
-            border-radius: 14px;
-            background: var(--cf-gradient);
-            z-index: -1;
-            opacity: 0.4;
-            filter: blur(6px);
-        }
-
-        .cf-logo svg { width: 24px; height: 24px; fill: #ffffff; }
-
-        h1 {
+        .cf-logo i {
             font-size: 1.35rem;
-            font-weight: 700;
+            color: var(--cf-orange);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .cf-logo:hover {
+            border-color: var(--cf-orange);
+            box-shadow: 0 0 16px var(--cf-orange-glow);
+            transform: scale(1.05);
+        }
+
+        .brand-title {
+            font-size: 1.15rem;
+            font-weight: 800;
             letter-spacing: -0.02em;
             background: var(--h1-color);
             -webkit-background-clip: text;
@@ -644,7 +641,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         }
 
         .brand-subtitle {
-            font-size: 0.78rem;
+            font-size: 0.76rem;
             color: var(--text-secondary);
             font-weight: 500;
         }
@@ -652,87 +649,75 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         .header-actions {
             display: flex;
             align-items: center;
-            gap: 0.6rem;
+            gap: 0.45rem;
             flex-wrap: wrap;
         }
 
-        /* Buttons & Control Pills */
-        .btn {
+        /* Pill Buttons matched to Filter Pills style */
+        .btn, .header-pill-btn {
             background: var(--btn-bg);
-            color: var(--text-primary);
             border: 1px solid var(--border-color);
-            padding: 0.5rem 0.9rem;
-            border-radius: 10px;
-            font-size: 0.82rem;
-            font-weight: 500;
+            color: var(--text-secondary);
+            padding: 0.35rem 0.75rem;
+            border-radius: 8px;
+            font-size: 0.76rem;
+            font-weight: 600;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 0.45rem;
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-            backdrop-filter: blur(8px);
+            justify-content: center;
+            gap: 0.35rem;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            font-family: inherit;
             user-select: none;
         }
 
-        .btn:hover {
+        .btn:hover, .header-pill-btn:hover {
+            color: var(--text-primary);
             background: var(--btn-hover);
-            border-color: rgba(255, 255, 255, 0.18);
+            border-color: rgba(255, 255, 255, 0.15);
             transform: translateY(-1px);
         }
 
-        :root.theme-light .btn:hover {
-            border-color: rgba(0, 0, 0, 0.16);
+        :root.theme-light .btn:hover, :root.theme-light .header-pill-btn:hover {
+            border-color: rgba(0, 0, 0, 0.15);
         }
 
-        .btn:active {
+        .btn:active, .header-pill-btn:active {
             transform: translateY(0);
         }
 
-        .btn-primary {
-            background: var(--cf-gradient);
-            color: #ffffff;
-            border-color: transparent;
-            box-shadow: 0 4px 14px var(--cf-orange-glow);
-            font-weight: 600;
+        .btn-primary, .header-pill-btn-primary {
+            background: var(--cf-orange);
+            color: #ffffff !important;
+            border-color: var(--cf-orange);
+            box-shadow: 0 2px 8px var(--cf-orange-glow);
         }
 
-        .btn-primary:hover {
-            background: linear-gradient(135deg, #e0731a 0%, #f38020 100%);
-            box-shadow: 0 6px 20px var(--cf-orange-glow);
-            border-color: transparent;
+        .btn-primary:hover, .header-pill-btn-primary:hover {
+            background: #e0731a;
+            border-color: #e0731a;
+            color: #ffffff !important;
+            box-shadow: 0 4px 12px var(--cf-orange-glow);
+            transform: translateY(-1px);
         }
 
-        .selector-group {
-            display: flex;
-            gap: 0.4rem;
-            align-items: center;
-            background: var(--btn-bg);
-            padding: 0.2rem;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-        }
-
-        .selector-group .btn {
-            border: none;
-            background: transparent;
-            padding: 0.4rem 0.7rem;
-            border-radius: 8px;
-        }
-
-        .selector-group .btn:hover {
-            background: var(--btn-hover);
-            transform: none;
+        .btn-sm {
+            padding: 0.25rem 0.6rem;
+            font-size: 0.74rem;
+            border-radius: 6px;
         }
 
         .status-badge {
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.45rem 0.85rem;
+            gap: 0.4rem;
+            padding: 0.35rem 0.65rem;
             background: rgba(16, 185, 129, 0.1);
             border: 1px solid rgba(16, 185, 129, 0.25);
-            border-radius: 9999px;
-            font-size: 0.78rem;
+            border-radius: 8px;
+            font-size: 0.74rem;
             font-weight: 600;
             color: #10b981;
         }
@@ -772,9 +757,9 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         .reset-card {
             background: var(--card-bg);
             border: 1px solid var(--card-glass-border);
-            border-radius: 18px;
-            padding: 1.35rem 1.5rem;
-            margin-bottom: 1.5rem;
+            border-radius: 14px;
+            padding: 0.95rem 1.15rem;
+            margin-bottom: 0.85rem;
             backdrop-filter: blur(16px) saturate(180%);
             box-shadow: var(--shadow-subtle), inset 0 1px 0 var(--card-inset-shine);
             position: relative;
@@ -793,49 +778,49 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 0.9rem;
+            margin-bottom: 0.65rem;
             flex-wrap: wrap;
-            gap: 0.75rem;
+            gap: 0.5rem;
         }
 
         .reset-title {
             display: flex;
             align-items: center;
-            gap: 0.6rem;
-            font-size: 0.95rem;
+            gap: 0.45rem;
+            font-size: 0.88rem;
             font-weight: 600;
             color: var(--text-primary);
         }
 
         .reset-title i {
-            font-size: 1.25rem;
+            font-size: 1.1rem;
             color: var(--cf-orange);
         }
 
         .reset-meta {
             display: flex;
             align-items: center;
-            gap: 0.6rem;
+            gap: 0.5rem;
         }
 
         .clock-pill {
             background: var(--btn-bg);
-            padding: 0.3rem 0.75rem;
-            border-radius: 8px;
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
             font-weight: 600;
-            font-size: 0.85rem;
+            font-size: 0.78rem;
             color: var(--clock-text);
             border: 1px solid var(--clock-border);
             font-variant-numeric: tabular-nums;
             display: inline-flex;
             align-items: center;
-            gap: 0.4rem;
+            gap: 0.35rem;
         }
 
         /* Animated Shimmer Progress Bar */
         .bar-bg {
             background: var(--input-bg);
-            height: 12px;
+            height: 10px;
             border-radius: 9999px;
             overflow: hidden;
             position: relative;
@@ -883,8 +868,8 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         .reset-sub {
             display: flex;
             justify-content: space-between;
-            margin-top: 0.65rem;
-            font-size: 0.8rem;
+            margin-top: 0.5rem;
+            font-size: 0.76rem;
             color: var(--text-secondary);
             font-weight: 500;
         }
@@ -893,20 +878,20 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         .metrics-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 0.9rem;
-            margin-bottom: 1.5rem;
+            gap: 0.65rem;
+            margin-bottom: 0.85rem;
         }
 
         .metric-card {
             background: var(--card-bg);
             border: 1px solid var(--card-glass-border);
-            border-radius: 16px;
-            padding: 1.15rem;
+            border-radius: 12px;
+            padding: 0.75rem 0.95rem;
             backdrop-filter: blur(16px) saturate(180%);
             box-shadow: var(--shadow-subtle), inset 0 1px 0 var(--card-inset-shine);
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
+            gap: 0.35rem;
             position: relative;
             overflow: hidden;
             transition: all 0.25s ease;
@@ -925,43 +910,43 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         }
 
         .metric-icon-wrap {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
+            width: 26px;
+            height: 26px;
+            border-radius: 7px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.1rem;
+            font-size: 0.95rem;
         }
 
         .metric-label {
-            font-size: 0.76rem;
+            font-size: 0.72rem;
             color: var(--text-secondary);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.04em;
             font-weight: 600;
         }
 
         .metric-value {
-            font-size: 1.45rem;
+            font-size: 1.25rem;
             font-weight: 700;
             color: var(--text-highlight);
             font-variant-numeric: tabular-nums;
-            line-height: 1.2;
+            line-height: 1.15;
         }
 
         /* Search & Filter Toolbar */
         .toolbar-section {
             background: var(--card-bg);
             border: 1px solid var(--card-glass-border);
-            border-radius: 16px;
-            padding: 0.75rem 1rem;
-            margin-bottom: 1.25rem;
+            border-radius: 12px;
+            padding: 0.55rem 0.85rem;
+            margin-bottom: 0.85rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 0.75rem;
+            gap: 0.6rem;
             backdrop-filter: blur(16px);
             box-shadow: var(--shadow-subtle), inset 0 1px 0 var(--card-inset-shine);
         }
@@ -969,13 +954,13 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         .search-box {
             display: flex;
             align-items: center;
-            gap: 0.6rem;
+            gap: 0.5rem;
             background: var(--input-bg);
             border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 0.45rem 0.85rem;
+            border-radius: 8px;
+            padding: 0.35rem 0.75rem;
             flex-grow: 1;
-            max-width: 380px;
+            max-width: 340px;
             transition: all 0.2s ease;
         }
 
@@ -1068,14 +1053,14 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         .account-list {
             display: flex;
             flex-direction: column;
-            gap: 1rem;
+            gap: 0.75rem;
         }
 
         .card {
             background: var(--card-bg);
             border: 1px solid var(--card-glass-border);
-            border-radius: 18px;
-            padding: 1.35rem;
+            border-radius: 14px;
+            padding: 0.95rem 1.15rem;
             backdrop-filter: blur(16px) saturate(180%);
             box-shadow: var(--shadow-subtle), inset 0 1px 0 var(--card-inset-shine);
             transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1105,9 +1090,9 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
             flex-wrap: wrap;
-            gap: 0.85rem;
+            gap: 0.75rem;
         }
 
         .account-title {
@@ -1267,23 +1252,34 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             font-weight: 500;
         }
 
-        /* Note & Links Section inside Card */
+        /* Compact Note & Links Section inside Card */
         .card-meta-section {
-            margin-top: 1.25rem;
+            margin-top: 0.85rem;
             border-top: 1px solid var(--border-color);
-            padding-top: 1.1rem;
+            padding-top: 0.75rem;
             display: flex;
-            flex-direction: column;
-            gap: 1rem;
+            align-items: stretch;
+            gap: 0.75rem;
+        }
+
+        @media (max-width: 680px) {
+            .card-meta-section {
+                flex-direction: column;
+            }
         }
 
         .note-container {
             background: var(--note-bg);
             border: 1px solid var(--note-border);
-            border-radius: 12px;
-            padding: 0.85rem 1rem;
+            border-radius: 10px;
+            padding: 0.5rem 0.75rem;
             position: relative;
             transition: all 0.2s ease;
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         .note-container:hover {
@@ -1298,14 +1294,14 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 0.45rem;
+            margin-bottom: 0.25rem;
         }
 
         .note-label {
             display: flex;
             align-items: center;
-            gap: 0.4rem;
-            font-size: 0.78rem;
+            gap: 0.35rem;
+            font-size: 0.72rem;
             font-weight: 600;
             color: var(--text-muted);
             text-transform: uppercase;
@@ -1314,7 +1310,7 @@ function renderDashboard(results, env, hasPasswordConfigured) {
 
         .note-icon {
             color: var(--cf-orange);
-            font-size: 1rem;
+            font-size: 0.9rem;
         }
 
         .note-edit-btn {
@@ -1322,13 +1318,13 @@ function renderDashboard(results, env, hasPasswordConfigured) {
             border: none;
             color: var(--text-muted);
             cursor: pointer;
-            font-size: 0.78rem;
+            font-size: 0.72rem;
             font-weight: 500;
             display: inline-flex;
             align-items: center;
-            gap: 0.25rem;
-            padding: 0.2rem 0.45rem;
-            border-radius: 6px;
+            gap: 0.2rem;
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
             transition: all 0.2s ease;
         }
 
@@ -1338,12 +1334,16 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         }
 
         .note-content {
-            font-size: 0.88rem;
+            font-size: 0.82rem;
             color: var(--text-primary);
-            line-height: 1.5;
+            line-height: 1.4;
             cursor: pointer;
-            min-height: 1.4rem;
-            white-space: pre-wrap;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            word-break: break-word;
+            overflow-wrap: anywhere;
         }
 
         .note-empty-state {
@@ -1354,238 +1354,188 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         .note-edit-wrapper {
             display: flex;
             flex-direction: column;
-            gap: 0.6rem;
-            margin-top: 0.4rem;
+            gap: 0.4rem;
+            margin-top: 0.2rem;
         }
 
         .note-input {
             width: 100%;
             background: var(--input-bg);
             border: 1px solid var(--cf-orange);
-            border-radius: 8px;
+            border-radius: 6px;
             color: var(--text-primary);
             font-family: inherit;
-            font-size: 0.88rem;
-            padding: 0.6rem 0.75rem;
+            font-size: 0.82rem;
+            padding: 0.4rem 0.6rem;
             resize: vertical;
-            min-height: 4rem;
+            min-height: 2.8rem;
             outline: none;
-            box-shadow: 0 0 0 3px rgba(243, 128, 32, 0.15);
+            box-shadow: 0 0 0 2px rgba(243, 128, 32, 0.15);
         }
 
         .note-actions {
             display: flex;
-            gap: 0.5rem;
+            gap: 0.4rem;
             justify-content: flex-end;
         }
 
         .btn-sm {
-            padding: 0.35rem 0.75rem;
-            font-size: 0.78rem;
-            border-radius: 8px;
+            padding: 0.25rem 0.6rem;
+            font-size: 0.74rem;
+            border-radius: 6px;
         }
 
         /* Links Section */
         .links-section {
             display: flex;
-            flex-direction: column;
-            gap: 0.6rem;
-        }
-
-        .links-section-header {
-            display: flex;
             align-items: center;
-            gap: 0.4rem;
-            font-size: 0.78rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-        }
-
-        .links-section-header i {
-            color: var(--accent-cyan);
-            font-size: 0.95rem;
+            flex-shrink: 0;
         }
 
         .links-row {
             display: flex;
             flex-direction: row;
-            gap: 0.75rem;
+            align-items: center;
+            gap: 0.45rem;
             flex-wrap: wrap;
         }
 
         .link-slot {
-            display: flex;
-            flex-direction: column;
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
             background: var(--btn-bg);
             border: 1px solid var(--border-color);
-            border-radius: 14px;
-            padding: 0;
-            width: 110px;
-            height: 100px;
-            flex-shrink: 0;
+            border-radius: 8px;
+            padding: 0.35rem 0.55rem;
             position: relative;
-            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-            overflow: hidden;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            max-width: 140px;
         }
 
         .link-slot:hover {
             border-color: rgba(6, 182, 212, 0.4);
             background: var(--btn-hover);
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.25);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.2);
         }
 
         .link-anchor {
             color: var(--text-primary);
             text-decoration: none;
-            font-size: 0.78rem;
-            font-weight: 600;
-            display: flex;
-            flex-direction: column;
+            font-size: 0.76rem;
+            font-weight: 500;
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
-            gap: 0.45rem;
+            gap: 0.35rem;
             width: 100%;
-            height: 100%;
-            padding: 0.65rem;
-            box-sizing: border-box;
-            text-align: center;
-            position: relative;
+            overflow: hidden;
         }
 
         .link-icon-circle {
-            width: 34px;
-            height: 34px;
-            border-radius: 10px;
-            background: rgba(6, 182, 212, 0.1);
-            border: 1px solid rgba(6, 182, 212, 0.2);
+            width: 22px;
+            height: 22px;
+            border-radius: 6px;
+            background: rgba(6, 182, 212, 0.12);
             color: var(--accent-cyan);
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.2rem;
-            transition: all 0.2s ease;
+            font-size: 0.85rem;
+            flex-shrink: 0;
         }
 
         .link-slot:hover .link-icon-circle {
-            background: rgba(6, 182, 212, 0.2);
-            transform: scale(1.08);
+            background: rgba(6, 182, 212, 0.22);
         }
 
         .link-title-text {
-            white-space: normal;
-            line-height: 1.25;
-            word-break: break-word;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
+            white-space: nowrap;
             overflow: hidden;
-            font-size: 0.76rem;
+            text-overflow: ellipsis;
+            font-size: 0.74rem;
             color: var(--text-primary);
+            max-width: 75px;
         }
 
         .link-external-icon {
-            position: absolute;
-            bottom: 5px;
-            right: 5px;
-            font-size: 0.7rem;
+            font-size: 0.68rem;
             color: var(--text-muted);
-            opacity: 0;
+            opacity: 0.6;
+            flex-shrink: 0;
             transition: opacity 0.2s ease;
         }
 
         [dir="rtl"] .link-external-icon {
-            right: auto;
-            left: 5px;
             transform: scaleX(-1);
         }
 
         .link-slot:hover .link-external-icon {
             opacity: 1;
+            color: var(--accent-cyan);
         }
 
         .delete-link-btn {
             position: absolute;
-            top: 5px;
-            right: 5px;
+            top: -5px;
+            right: -5px;
             z-index: 2;
-            background: var(--card-bg);
+            background: var(--modal-bg);
             border: 1px solid var(--border-color);
             color: var(--text-muted);
             cursor: pointer;
-            width: 20px;
-            height: 20px;
-            border-radius: 6px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.75rem;
+            font-size: 0.65rem;
             transition: all 0.2s ease;
-            opacity: 0.6;
+            opacity: 0;
         }
 
         [dir="rtl"] .delete-link-btn {
             right: auto;
-            left: 5px;
+            left: -5px;
+        }
+
+        .link-slot:hover .delete-link-btn {
+            opacity: 1;
         }
 
         .delete-link-btn:hover {
             color: #ef4444;
-            background: rgba(239, 68, 68, 0.15);
-            border-color: rgba(239, 68, 68, 0.3);
-            opacity: 1;
-            transform: scale(1.1);
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.4);
+            transform: scale(1.15);
         }
 
         .add-link-btn {
-            background: rgba(6, 182, 212, 0.04);
-            border: 1px dashed rgba(6, 182, 212, 0.3);
-            border-radius: 14px;
+            background: rgba(6, 182, 212, 0.05);
+            border: 1px dashed rgba(6, 182, 212, 0.35);
+            border-radius: 8px;
             color: var(--accent-cyan);
-            padding: 0.65rem;
-            width: 110px;
-            height: 100px;
+            padding: 0.35rem 0.65rem;
             cursor: pointer;
             font-family: inherit;
-            font-size: 0.76rem;
+            font-size: 0.74rem;
             font-weight: 600;
-            display: flex;
-            flex-direction: column;
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
-            gap: 0.45rem;
-            transition: all 0.25s ease;
+            gap: 0.3rem;
+            transition: all 0.2s ease;
+            height: 30px;
         }
 
-        .add-link-icon-wrap {
-            width: 34px;
-            height: 34px;
-            border-radius: 10px;
-            background: rgba(6, 182, 212, 0.08);
-            border: 1px dashed rgba(6, 182, 212, 0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.1rem;
-            transition: all 0.2s ease;
+        .add-link-btn i {
+            font-size: 0.85rem;
         }
 
         .add-link-btn:hover {
-            background: rgba(6, 182, 212, 0.1);
+            background: rgba(6, 182, 212, 0.12);
             border-color: var(--accent-cyan);
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px -4px rgba(6, 182, 212, 0.2);
-        }
-
-        .add-link-btn:hover .add-link-icon-wrap {
-            background: var(--accent-cyan);
-            color: #ffffff;
-            border-style: solid;
-            transform: scale(1.08);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px -2px rgba(6, 182, 212, 0.2);
         }
 
         /* Modals & Dialogs */
@@ -1973,31 +1923,27 @@ function renderDashboard(results, env, hasPasswordConfigured) {
         <header>
             <div class="brand">
                 <div class="cf-logo">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/>
-                    </svg>
+                    <i class="ti ti-cloud"></i>
                 </div>
                 <div>
-                    <h1 data-i18n="brand-title">Cloudflare Workers Usage</h1>
+                    <h1 class="brand-title" data-i18n="brand-title">Cloudflare Workers Usage</h1>
                     <div class="brand-subtitle" data-i18n="brand-subtitle">Daily Invocation Tracker</div>
                 </div>
             </div>
             <div class="header-actions">
-                <div class="selector-group">
-                    <button class="btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Switch Theme">
-                        <i class="ti ti-device-desktop" id="theme-toggle-icon"></i>
-                        <span id="theme-toggle-text" data-i18n="theme-system">System</span>
-                    </button>
-                    <button class="btn" id="lang-toggle-btn" onclick="toggleLanguage()" title="Switch Language">
-                        <i class="ti ti-language"></i>
-                        <span id="lang-toggle-text">English</span>
-                    </button>
-                </div>
-                <button class="btn" id="lock-btn" onclick="openPasswordModal()">
+                <button class="header-pill-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Switch Theme">
+                    <i class="ti ti-device-desktop" id="theme-toggle-icon"></i>
+                    <span id="theme-toggle-text" data-i18n="theme-system">System</span>
+                </button>
+                <button class="header-pill-btn" id="lang-toggle-btn" onclick="toggleLanguage()" title="Switch Language">
+                    <i class="ti ti-language"></i>
+                    <span id="lang-toggle-text">English</span>
+                </button>
+                <button class="header-pill-btn" id="lock-btn" onclick="openPasswordModal()">
                     <i class="ti ti-lock"></i>
                     <span id="lock-text" data-i18n="unlock-settings">Unlock Settings</span>
                 </button>
-                <button class="btn btn-primary" onclick="openManageAccountsModal()">
+                <button class="header-pill-btn header-pill-btn-primary" onclick="openManageAccountsModal()">
                     <i class="ti ti-settings"></i>
                     <span data-i18n="manage-accounts">Manage Accounts</span>
                 </button>
@@ -2409,7 +2355,7 @@ CF_ACCOUNT_NAME_1=main</p>
                 "footer-by": "by",
                 "footer-powered": "Powered by Cloudflare Workers & Cloudflare KV",
                 "alert-req-fields": "Title and URL are required.",
-                "alert-max-links": "Maximum of 5 links reached.",
+                "alert-max-links": "Maximum of 4 links reached.",
                 "alert-acc-req": "Account Name and Account ID are required.",
                 "alert-token-req": "API Token is required for new accounts.",
                 "confirm-delete-link": "Are you sure you want to delete this link?",
@@ -2496,7 +2442,7 @@ CF_ACCOUNT_NAME_1=main</p>
                 "footer-by": "توسط",
                 "footer-powered": "قدرت گرفته از Cloudflare Workers و Cloudflare KV",
                 "alert-req-fields": "وارد کردن عنوان و آدرس لینک الزامی است.",
-                "alert-max-links": "حداکثر ظرفیت ۵ لینک تکمیل شده است.",
+                "alert-max-links": "حداکثر ظرفیت ۴ لینک تکمیل شده است.",
                 "alert-acc-req": "وارد کردن نام و شناسه اکانت الزامی است.",
                 "alert-token-req": "برای اکانت‌های جدید وارد کردن توکن API الزامی است.",
                 "confirm-delete-link": "آیا از حذف این لینک اطمینان دارید؟",
@@ -2717,13 +2663,13 @@ CF_ACCOUNT_NAME_1=main</p>
             const lockText = document.getElementById('lock-text');
             if (!lockBtn || !lockText) return;
             if (!isPasswordConfigured) {
-                lockBtn.style.background = 'rgba(243, 128, 32, 0.15)';
+                lockBtn.style.background = 'rgba(243, 128, 32, 0.12)';
                 lockBtn.style.borderColor = 'rgba(243, 128, 32, 0.3)';
-                lockBtn.style.color = '#f38020';
+                lockBtn.style.color = 'var(--cf-orange)';
                 lockText.textContent = translations[currentLang]["btn-create-password"] || "Create Password";
                 lockBtn.querySelector('i').className = 'ti ti-shield-lock';
             } else if (cachedPassword) {
-                lockBtn.style.background = 'rgba(16, 185, 129, 0.15)';
+                lockBtn.style.background = 'rgba(16, 185, 129, 0.12)';
                 lockBtn.style.borderColor = 'rgba(16, 185, 129, 0.3)';
                 lockBtn.style.color = '#10b981';
                 lockText.textContent = translations[currentLang]["unlocked"];
@@ -2731,7 +2677,7 @@ CF_ACCOUNT_NAME_1=main</p>
             } else {
                 lockBtn.style.background = 'var(--btn-bg)';
                 lockBtn.style.borderColor = 'var(--border-color)';
-                lockBtn.style.color = 'var(--text-primary)';
+                lockBtn.style.color = 'var(--text-secondary)';
                 lockText.textContent = translations[currentLang]["unlock-settings"];
                 lockBtn.querySelector('i').className = 'ti ti-lock';
             }
@@ -3032,12 +2978,10 @@ CF_ACCOUNT_NAME_1=main</p>
                 \`;
             });
 
-            if ((meta.links || []).length < 5) {
+            if ((meta.links || []).length < 4) {
                 linksHtml += \`
                     <button class="add-link-btn" onclick="openAddLinkModal('\${accountId}')" title="Add Link Slot">
-                        <div class="add-link-icon-wrap">
-                            <i class="ti ti-plus"></i>
-                        </div>
+                        <i class="ti ti-plus"></i>
                         <span data-i18n="btn-add-link">Add Link</span>
                     </button>
                 \`;
@@ -3070,7 +3014,7 @@ CF_ACCOUNT_NAME_1=main</p>
 
             let meta = fullMetaMap.get(accountId) || { note: "", links: [] };
             if (!meta.links) meta.links = [];
-            if (meta.links.length >= 5) {
+            if (meta.links.length >= 4) {
                 alert(translations[currentLang]["alert-max-links"]);
                 return;
             }
