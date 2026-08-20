@@ -4,6 +4,11 @@
 
 یک داشبورد مدرن، زیبا و با قابلیت تغییر تم (روشن/تاریک) جهت مانیتورینگ روزانه میزان استفاده از Cloudflare Workers در چندین اکانت مختلف. ساخته‌شده به‌طور کامل به عنوان Cloudflare Worker با استفاده از Cloudflare KV.
 
+<p align="center">
+  <img src="screenshot-pc.png" alt="پیش‌نمایش دسکتاپ" width="68%" />
+  <img src="screenshot-mob.png" alt="پیش‌نمایش موبایل" width="28%" />
+</p>
+
 ---
 
 ## 📚 مستندات و لینک‌های سریع

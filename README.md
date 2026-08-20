@@ -4,6 +4,11 @@
 
 A clean, modern, and light/dark theme switchable dashboard to monitor daily Cloudflare Workers usage across multiple accounts. Built entirely as a Cloudflare Worker using Cloudflare KV.
 
+<p align="center">
+  <img src="screenshot-pc.png" alt="Desktop Preview" width="68%" />
+  <img src="screenshot-mob.png" alt="Mobile Preview" width="28%" />
+</p>
+
 ---
 
 ## 📚 Documentation & Quick Links
